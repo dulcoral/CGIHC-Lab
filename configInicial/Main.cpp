@@ -1,7 +1,7 @@
 /*---------------------------------------------------------*/
 /* ----------------   Pr�ctica 1 --------------------------*/
 /*-----------------    2026-1   ---------------------------*/
-/*------------- (Nombre del alumno) ---------------*/
+/*------------- Dulce Coral Rodriguez Garcia ---------------*/
 #include<iostream>
 
 //#define GLEW_STATIC
@@ -83,14 +83,37 @@ void myData()
 {
 	float vertices[] = 
 	{
-		// positions         //
-		0.0f,  0.0f, 0.0f,  //0
-		
+		// positions   XYZ      //
+		-0.7f, 0.8f, 0.0f,  //0
+		0.3f, 0.8f, 0.0f,  //1
+	    0.3f, 0.6f, 0.0f, //2
+		0.0f, 0.6f, 0.0f,  //3
+		0.0f, 0.4f, 0.0f, //4
+		0.15f, 0.4f, 0.0f, //5
+		0.15f, 0.2f, 0.0f, //6
+		0.0f, 0.2f, 0.0f, //7
+		0.0f, -0.4f, 0.0f, //8
+		-0.7f, -0.4f, 0.0f, //9	
 	};
 
 	unsigned int indices[] =
 	{
-		0, 1, 4, 2, 3
+		/*3,0,1,
+		4,9,0,
+		0,3,4,
+		1,2,3,
+		5,6,7,
+		4,5,7,
+		4,9,8*/
+
+        // Primer GL_TRIANGLE_FAN
+    	3, 2, 1, 0, 4, // 5 índices
+    
+   		// Segundo GL_TRIANGLE_FAN
+   		4, 3, 0, 9, 8, 7, // 6 índices
+    
+    	// Triángulos de la barra media
+    	7, 4, 5, 7, 5, 6 // 6 índices
 	};
 
 	glGenVertexArrays(2, VAO);
@@ -164,7 +187,7 @@ int main()
     // ------------------------------
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    // glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 #ifdef __APPLE__
@@ -176,7 +199,7 @@ int main()
 	monitors = glfwGetPrimaryMonitor();
 	getResolution();
 
-	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Practica 1 2026", NULL, NULL); //Bug?
+	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Practica 1 2026", NULL, NULL);//Bug?
 	if (window == NULL)
 	{
 		const char* description;
@@ -205,7 +228,7 @@ int main()
 
         // render
         // Background color
-        glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f); //RGBA
         glClear(GL_COLOR_BUFFER_BIT);
 
 		//Display Section
@@ -214,9 +237,16 @@ int main()
 		glBindVertexArray(VAO[0]);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[0]);
 
-		glPointSize(10.0);
-		//glDrawElements(GL_POINTS, 5, GL_UNSIGNED_INT, 0);
-		glDrawArrays(GL_POINTS, 0, 1);
+		glPointSize(10.0f);
+		glLineWidth(10.0f);
+		//glDrawElements(GL_TRIANGLES, 21, GL_UNSIGNED_INT, 0); // LISTO LA LETRA F
+		//glDrawArrays(GL_TRIANGLE_FAN, 0, 10);
+		//glDrawArrays(GL_POINTS, 3, 1);
+
+		glDrawElements(GL_TRIANGLE_FAN, 5, GL_UNSIGNED_INT, 0); // barra superior
+		glDrawElements(GL_TRIANGLE_FAN, 6, GL_UNSIGNED_INT, (void*)(5 * sizeof(float))); // barra vertical
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(11 * sizeof(unsigned int))); // 2 triángulos * 3 vértices = 6 índices - barra media
+
 
 
 		glBindVertexArray(0);
