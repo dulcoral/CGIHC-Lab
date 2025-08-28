@@ -1,5 +1,5 @@
 /*---------------------------------------------------------*/
-/* ----------------   Pr�ctica 1 --------------------------*/
+/* ----------------   Pr�ctica 2 --------------------------*/
 /*-----------------    2026-1   ---------------------------*/
 /*------------- Dulce Coral Rodriguez Garcia ---------------*/
 #include<iostream>
@@ -52,7 +52,7 @@ out vec3 finalColor;														\n\
 																			\n\
 void main()																	\n\
 {																			\n\
-    finalColor = vec3(1.0f, 1.0f, 0.0f);									\n\
+    finalColor = vec3(1.0f, 0.0f, 0.0f);									\n\
 }";
 
 static const char* myFragmentShaderColor = "								\n\
@@ -83,17 +83,35 @@ void myData()
 {
 	float vertices[] = 
 	{
-		// positions   XYZ      //
-		-0.7f, 0.8f, 0.0f,  //0
-		0.3f, 0.8f, 0.0f,  //1
-	    0.3f, 0.6f, 0.0f, //2
-		0.0f, 0.6f, 0.0f,  //3
-		0.0f, 0.4f, 0.0f, //4
-		0.15f, 0.4f, 0.0f, //5
-		0.15f, 0.2f, 0.0f, //6
-		0.0f, 0.2f, 0.0f, //7
-		0.0f, -0.4f, 0.0f, //8
-		-0.7f, -0.4f, 0.0f, //9	
+		// positions   XYZ      // color
+		/*-0.7f, 0.8f, 0.0f,    1.0f, 1.0f, 1.0f,
+		0.3f, 0.8f, 0.0f,     1.0f, 1.0f, 0.0f,
+	    0.3f, 0.6f, 0.0f,     1.0f, 0.0f, 1.0f,
+		0.0f, 0.6f, 0.0f,     0.0f, 1.0f, 1.0f,
+		0.0f, 0.4f, 0.0f,     0.0f, 0.0f, 1.0f,
+		0.15f, 0.4f, 0.0f,    0.0f, 1.0f, 0.0f,
+		0.15f, 0.2f, 0.0f,    1.0f, 1.0f, 1.0f,
+		0.0f, 0.2f, 0.0f,     0.26f, 0.58f, 0.367f,
+		0.0f, -0.4f, 0.0f,    1.0f, 1.0f, 1.0f,
+		-0.7f, -0.4f, 0.0f,   1.0f, 1.0f, 1.0f,	*/
+
+		0.52738f, 0.43345f, 0.0f,     1.0f, 1.0f, 1.0f, // h = 0
+	    0.79008f, 0.59887f, 0.0f,     1.0f, 1.0f, 1.0f, // d = 1
+		0.78693f, 0.55672f, 0.0f,     1.0f, 1.0f, 1.0f, // e = 2
+		0.82829f, 0.57011f, 0.0f,     1.0f, 1.0f, 1.0f, // f = 3
+		0.77078f, 0.47717f, 0.0f,     1.0f, 1.0f, 1.0f, // g = 4
+		0.83531f, 0.35247f, 0.0f,     0.0f, 1.0f, 0.0f, // i = 5
+		0.73671f, 0.17715f, 0.0f,     0.0f, 1.0f, 0.0f, // j = 6
+		0.95f, 0.25f, 0.0f,           0.0f, 1.0f, 0.0f, // k = 7
+		0.871f, 0.1618f, 0.0f,        0.0f, 1.0f, 0.0f,	// l = 8
+		0.62858f, 0.1109f, 0.0f,	  1.0f, 1.0f, 1.0f, // c = 9
+		0.54306f, -0.05877f, 0.0f,    1.0f, 1.0f, 1.0f, // m = 10
+		0.09716f, 0.20318f,0.0f,	  1.0f, 1.0f, 1.0f, // n = 11
+		0.44101f, 0.02887f, 0.0f,	  1.0f, 1.0f, 1.0f, // o = 12
+		0.74225f, 0.2416f, 0.0f,	  0.0f, 1.0f, 0.0f, // p = 13
+		-0.29375f, 0.21326f, 0.0f,    1.0f, 1.0f, 1.0f, // q = 14
+		-0.5134f, 0.12199f, 0.0f,     1.0f, 1.0f, 1.0f, // r = 15
+		0.77078f, 0.47717f, 0.0f,     0.0f, 1.0f, 0.0f, // g2 = 16
 	};
 
 	unsigned int indices[] =
@@ -106,31 +124,38 @@ void myData()
 		4,5,7,
 		4,9,8*/
 
-        // Primer GL_TRIANGLE_FAN
-    	3, 2, 1, 0, 4, // 5 índices
+        // perro con lines
+    	//0,1,2,3,4,5,7,8,6,9,
+		//10,12,11,13,14,15,
+
+		// orejas
+		2,1,0,4,3,
+
+		// cabeza
+		4,0,9,6,13,
+
+		// rostro
+		5,16,13,6,8,7
+		//I, g,p,j,l,k
+		
+		
+
     
-   		// Segundo GL_TRIANGLE_FAN
-   		4, 3, 0, 9, 8, 7, // 6 índices
-    
-    	// Triángulos de la barra media
-    	7, 4, 5, 7, 5, 6 // 6 índices
 	};
 
 	glGenVertexArrays(2, VAO);
 	glGenBuffers(2, VBO);
 	glGenBuffers(2, EBO);
 
-
-
 	glBindVertexArray(VAO[0]);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0); // como se organiza la entrada de posicion
 	glEnableVertexAttribArray(0);
 	// color attribute
-	//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	//glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float))); // como se organiza la entrada de color
+	glEnableVertexAttribArray(1);
 
 	//Para trabajar con indices (Element Buffer Object)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[0]);
@@ -232,7 +257,7 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
 		//Display Section
-		glUseProgram(shaderProgramYellow);
+		glUseProgram(shaderProgramColor);
 
 		glBindVertexArray(VAO[0]);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[0]);
@@ -243,9 +268,10 @@ int main()
 		//glDrawArrays(GL_TRIANGLE_FAN, 0, 10);
 		//glDrawArrays(GL_POINTS, 3, 1);
 
-		glDrawElements(GL_TRIANGLE_FAN, 5, GL_UNSIGNED_INT, 0); // barra superior
-		glDrawElements(GL_TRIANGLE_FAN, 6, GL_UNSIGNED_INT, (void*)(5 * sizeof(float))); // barra vertical
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(11 * sizeof(unsigned int))); // 2 triángulos * 3 vértices = 6 índices - barra media
+		glDrawElements(GL_TRIANGLE_FAN, 10, GL_UNSIGNED_INT, 0); // barra superior
+		glDrawElements(GL_TRIANGLE_FAN, 6, GL_UNSIGNED_INT, (void*)(10 * sizeof(float))); 
+		//glDrawElements(GL_TRIANGLE_FAN, 6, GL_UNSIGNED_INT, (void*)(5 * sizeof(float))); // barra vertical
+		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(11 * sizeof(unsigned int))); // 2 triángulos * 3 vértices = 6 índices - barra media
 
 
 
