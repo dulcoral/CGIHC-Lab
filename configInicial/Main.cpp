@@ -84,63 +84,163 @@ void myData()
 	float vertices[] = 
 	{
 		// positions   XYZ      // color
-		/*-0.7f, 0.8f, 0.0f,    1.0f, 1.0f, 1.0f,
-		0.3f, 0.8f, 0.0f,     1.0f, 1.0f, 0.0f,
-	    0.3f, 0.6f, 0.0f,     1.0f, 0.0f, 1.0f,
-		0.0f, 0.6f, 0.0f,     0.0f, 1.0f, 1.0f,
-		0.0f, 0.4f, 0.0f,     0.0f, 0.0f, 1.0f,
-		0.15f, 0.4f, 0.0f,    0.0f, 1.0f, 0.0f,
-		0.15f, 0.2f, 0.0f,    1.0f, 1.0f, 1.0f,
-		0.0f, 0.2f, 0.0f,     0.26f, 0.58f, 0.367f,
-		0.0f, -0.4f, 0.0f,    1.0f, 1.0f, 1.0f,
-		-0.7f, -0.4f, 0.0f,   1.0f, 1.0f, 1.0f,	*/
-
-		0.52738f, 0.43345f, 0.0f,     1.0f, 1.0f, 1.0f, // h = 0
-	    0.79008f, 0.59887f, 0.0f,     1.0f, 1.0f, 1.0f, // d = 1
-		0.78693f, 0.55672f, 0.0f,     1.0f, 1.0f, 1.0f, // e = 2
-		0.82829f, 0.57011f, 0.0f,     1.0f, 1.0f, 1.0f, // f = 3
-		0.77078f, 0.47717f, 0.0f,     1.0f, 1.0f, 1.0f, // g = 4
-		0.83531f, 0.35247f, 0.0f,     0.0f, 1.0f, 0.0f, // i = 5
-		0.73671f, 0.17715f, 0.0f,     0.0f, 1.0f, 0.0f, // j = 6
-		0.95f, 0.25f, 0.0f,           0.0f, 1.0f, 0.0f, // k = 7
-		0.871f, 0.1618f, 0.0f,        0.0f, 1.0f, 0.0f,	// l = 8
-		0.62858f, 0.1109f, 0.0f,	  1.0f, 1.0f, 1.0f, // c = 9
-		0.54306f, -0.05877f, 0.0f,    1.0f, 1.0f, 1.0f, // m = 10
-		0.09716f, 0.20318f,0.0f,	  1.0f, 1.0f, 1.0f, // n = 11
-		0.44101f, 0.02887f, 0.0f,	  1.0f, 1.0f, 1.0f, // o = 12
-		0.74225f, 0.2416f, 0.0f,	  0.0f, 1.0f, 0.0f, // p = 13
-		-0.29375f, 0.21326f, 0.0f,    1.0f, 1.0f, 1.0f, // q = 14
-		-0.5134f, 0.12199f, 0.0f,     1.0f, 1.0f, 1.0f, // r = 15
-		0.77078f, 0.47717f, 0.0f,     0.0f, 1.0f, 0.0f, // g2 = 16
+		0.10213f, 0.11903f, 0.0f,    0.87f, 0.72f, 0.53f,  // c = 0 (cafe dorado)
+		0.55427f, 0.35793f, 0.0f,    1.0f, 1.0f, 1.0f,  // d = 1 
+		0.82071f, 0.5259f, 0.0f,     1.0f, 1.0f, 1.0f,   // e = 2
+		0.82205f, 0.48947f, 0.0f,    1.0f, 1.0f, 1.0f,   // f = 3
+		0.85493f, 0.49658f, 0.0f,    1.0f, 1.0f, 1.0f,   // g = 4
+		0.80561f, 0.40816f, 0.0f,    0.87f, 0.72f, 0.53f,  // h = 5
+		0.87254f, 0.27944f, 0.0f,    0.87f, 0.72f, 0.53f,  // i = 6
+		0.98644f, 0.16747f, 0.0f,    0.87f, 0.72f, 0.53f, // j = 7
+		0.91115f, 0.07867f, 0.0f,    0.87f, 0.72f, 0.53f,  // k = 8
+		0.76926f, 0.09508f, 0.0f,    0.87f, 0.72f, 0.53f,  // l = 9
+		0.77698f, 0.1723f, 0.0f,     0.87f, 0.72f, 0.53f,  // m = 10
+		0.66019f, 0.02172f, 0.0f,    0.87f, 0.72f, 0.53f,  // n = 11
+		0.57308f, -0.14715f, 0.0f,   0.87f, 0.72f, 0.53f,  // o = 12
+		0.46058f, -0.06671f, 0.0f,   0.87f, 0.72f, 0.53f,  // p = 13
+		0.40221f, -0.25714f, 0.0f,   0.87f, 0.72f, 0.53f,  // q = 14
+		0.23837f, -0.35895f, 0.0f,   0.87f, 0.72f, 0.53f,  // r = 15
+		-0.01434f, -0.3372f, 0.0f,   0.87f, 0.72f, 0.53f,  // s = 16
+		-0.14488f, -0.28532f, 0.0f,  0.87f, 0.72f, 0.53f,  // t = 17
+		-0.2453f, -0.20833f, 0.0f,   0.87f, 0.72f, 0.53f,  // u = 18
+		-0.34738f, -0.12465f, 0.0f,  0.87f, 0.72f, 0.53f,  // v = 19
+		-0.52502f, 0.03232f, 0.0f,   0.87f, 0.72f, 0.53f,  // w = 20
+		-0.29824f, 0.12025f, 0.0f,   0.87f, 0.72f, 0.53f,  // z = 21
+		-0.28713f, -0.30205f, 0.0f,  0.87f, 0.72f, 0.53f,  // a1 = 22
+		-0.42771f, -0.4828f, 0.0f,   0.87f, 0.72f, 0.53f,  // b1 = 23
+		-0.61382f, -0.5025f, 0.0f,   0.87f, 0.72f, 0.53f,  // c1 = 24
+		-0.38941f, -0.23006f, 0.0f,  0.87f, 0.72f, 0.53f,  // d1 = 25
+		-0.61588f, -0.25751f, 0.0f,  0.87f, 0.72f, 0.53f,  // e1 = 26
+		-0.71312f, -0.33438f, 0.0f,  0.87f, 0.72f, 0.53f,  // f1 = 27
+		-0.95694f, -0.27839f, 0.0f,  0.87f, 0.72f, 0.53f,  // g1 = 28
+		-0.9406f, -0.19089f, 0.0f,   0.87f, 0.72f, 0.53f,  // h1 = 29
+		-0.80642f, -0.20904f, 0.0f,  0.87f, 0.72f, 0.53f,  // i1 = 30
+		-0.6625f, -0.12435f, 0.0f,   0.87f, 0.72f, 0.53f,  // j1 = 31
+		-0.71644f, -0.60133f, 0.0f,  0.87f, 0.72f, 0.53f,  // k1 = 32
+		-0.74782f, -0.86267f, 0.0f,  0.87f, 0.72f, 0.53f,  // l1 = 33
+		-0.66233f, -0.86213f, 0.0f,  0.87f, 0.72f, 0.53f,  // m1 = 34
+		-0.68289f, -0.82046f, 0.0f,  0.87f, 0.72f, 0.53f,  // n1 = 35
+		-0.66125f, -0.71008f, 0.0f,  0.87f, 0.72f, 0.53f,  // o1 = 36
+		-0.61309f, -0.65002f, 0.0f,  0.87f, 0.72f, 0.53f,  // p1 = 37
+		-0.56602f, -0.58888f, 0.0f,  0.87f, 0.72f, 0.53f,  // q1 = 38
+		-0.51407f, -0.54776f, 0.0f,  0.87f, 0.72f, 0.53f,  // r1 = 39
+		-0.55303f, -0.66517f, 0.0f,  0.87f, 0.72f, 0.53f,  // s1 = 40
+		-0.54563f, -0.75517f, 0.0f,  0.87f, 0.72f, 0.53f,  // t1 = 41
+		-0.48609f, -0.78472f, 0.0f,  0.87f, 0.72f, 0.53f,  // u1 = 42
+		-0.51086f, -0.81384f, 0.0f,  0.87f, 0.72f, 0.53f,  // v1 = 43
+		-0.60474f, -0.78472f, 0.0f,  0.87f, 0.72f, 0.53f,  // w1 = 44
+		0.28688f, -0.80794f, 0.0f,   0.87f, 0.72f, 0.53f,  // z1 = 45
+		0.38988f, -0.81356f, 0.0f,   0.87f, 0.72f, 0.53f,  // a2 = 46
+		0.34606f, -0.71918f, 0.0f,   0.87f, 0.72f, 0.53f,  // b2 = 47
+		0.36962f, -0.34723f, 0.0f,   0.87f, 0.72f, 0.53f,  // c2 = 48
+		0.41612f, -0.32796f, 0.0f,   0.87f, 0.72f, 0.53f,  // d2 = 49
+		0.41802f, -0.50319f, 0.0f,   0.87f, 0.72f, 0.53f,  // e2 = 50
+		0.40086f, -0.61751f, 0.0f,   0.87f, 0.72f, 0.53f,  // f2 = 51
+		0.44091f, -0.68633f, 0.0f,   0.87f, 0.72f, 0.53f,  // g2 = 52
+		0.47851f, -0.71036f, 0.0f,   0.87f, 0.72f, 0.53f,  // h2 = 53
+		0.47753f, -0.75773f, 0.0f,   0.87f, 0.72f, 0.53f,  // i2 = 54
+		0.44019f, -0.7617f, 0.0f,    0.87f, 0.72f, 0.53f   // j2 = 55
 	};
 
 	unsigned int indices[] =
 	{
-		/*3,0,1,
-		4,9,0,
-		0,3,4,
-		1,2,3,
-		5,6,7,
-		4,5,7,
-		4,9,8*/
+		// Primera oreja (triangle_fan desde D)
+		1, 2, 3, 4,    // d(pivote), e, f, g
+        
+		// Segunda oreja (triangle_fan desde H)
+		5, 4, 3, 1,    // h(pivote), g, f, d
 
-        // perro con lines
-    	//0,1,2,3,4,5,7,8,6,9,
-		//10,12,11,13,14,15,
+		// CABEZA (pivote D=1)
+		1, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14,
 
-		// orejas
-		2,1,0,4,3,
+		// TORSO CUELLO — definición por triangulos
+		// D->N->O->D
+		1, 11, 12,
+		// D->O->Q->P->D
+		1, 12, 14,
+		1, 14, 13,
+		// D->P->C->D
+		1, 13, 0,
+		// C->P->Q->R->C
+		0, 13, 14,
+		0, 14, 15,
+		// C->R->S->T->C
+		0, 15, 16,
+		0, 16, 17,
+		// C->T->U->V->C
+		0, 17, 18,
+		0, 18, 19,
+		// C->V->W->Z->C
+		0, 19, 20,
+		0, 20, 21,
 
-		// cabeza
-		4,0,9,6,13,
+		// PATA DELANTERA - O-Q-C2-D2 (dos triangulos)
+		12, 14, 48,
+		12, 48, 49
+		,
+		// FAN superior con pivote C2: C2,Q,R,Z1,B2
+		48, 14, 15, 45, 47,
+		// Triangulo independiente para cerrar Z1-A2-B2
+		47, 45, 46,
+		// PIE: 7 triangulos especificados
+		// D2-C2-E2
+		49, 48, 50,
+		// C2-E2-B2
+		48, 50, 47,
+		// E2-B2-F2
+		50, 47, 51,
+		// B2-F2-G2
+		47, 51, 52,
+		// B2-J2-G2
+		47, 55, 52,
+		// H2-J2-G2
+		53, 55, 52,
+		// H2-J2-I2
+		53, 55, 54,
 
-		// rostro
-		5,16,13,6,8,7
-		//I, g,p,j,l,k
-		
-		
+		// COLA: V,U,D1 y E1,V,D1 y E1,V,W
+		// V(19), U(18), D1(25)
+		19, 18, 25,
+		// E1(26), V(19), D1(25)
+		26, 19, 25,
+		// E1(26), V(19), W(20)
+		26, 19, 20,
+		// FAN cola con pivote E1: E1, W, J1, I1
+		26, 20, 31, 30,
+		// Segmentos restantes de la cola
+		// E1-I1-F1
+		26, 30, 27,
+		// F1-I1-G1
+		27, 30, 28,
+		// I1-G1-H1
+		30, 28, 29
 
-    
+		,
+		// Muslo y Panza
+		// Triangulo E1-C1-D1  => 26,24,25
+		26, 24, 25,
+		// Triangulo C1-B1-A1  => 24,23,22
+		24, 23, 22,
+		// PANZA: fan con pivote A1 (A1, D1, U, T) y triangulo C1-D1-A1
+		// A1(22), D1(25), U(18), T(17)
+		22, 25, 18, 17,
+		// C1(24), D1(25), A1(22)
+		24, 25, 22,
+		// PATA TRASERA PRINCIPAL
+		// Fan con pivote K1: K1, C1, B1, R1, Q1, P1, O1, N1, L1
+		32, 24, 23, 39, 38, 37, 36, 35, 33,
+		// Triangulo N1-L1-M1
+		35, 33, 34
+
+		,
+		// PATA TRASERA SECUNDARIA
+		// Fan con pivote W1: W1, V1, T1, S1, Q1, P1
+		44, 43, 41, 40, 38, 37,
+		// Triangulos auxiliares
+		// Q1-S1-R1
+		38, 40, 39,
+		// V1-U1-T1
+		43, 42, 41
 	};
 
 	glGenVertexArrays(2, VAO);
@@ -238,6 +338,7 @@ int main()
 	glfwSetFramebufferSizeCallback(window, resize);
 
 	glewInit();
+	//glEnable(GL_MULTISAMPLE);
 	//Setup Data to use
 	myData();
 	//To Setup Shaders
@@ -268,12 +369,38 @@ int main()
 		//glDrawArrays(GL_TRIANGLE_FAN, 0, 10);
 		//glDrawArrays(GL_POINTS, 3, 1);
 
-		glDrawElements(GL_TRIANGLE_FAN, 10, GL_UNSIGNED_INT, 0); // barra superior
-		glDrawElements(GL_TRIANGLE_FAN, 6, GL_UNSIGNED_INT, (void*)(10 * sizeof(float))); 
-		//glDrawElements(GL_TRIANGLE_FAN, 6, GL_UNSIGNED_INT, (void*)(5 * sizeof(float))); // barra vertical
-		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(11 * sizeof(unsigned int))); // 2 triángulos * 3 vértices = 6 índices - barra media
+		// orejas
+		glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, (void*)(0 * sizeof(unsigned int)));
+		glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, (void*)(4 * sizeof(unsigned int)));
 
+		// cabeza
+		glDrawElements(GL_TRIANGLE_FAN, 11, GL_UNSIGNED_INT, (void*)(8 * sizeof(unsigned int)));
 
+		// TORSO - CUELLO
+		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, (void*)(19 * sizeof(unsigned int)));
+		// PATA DELANTERA
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(55 * sizeof(unsigned int)));
+		glDrawElements(GL_TRIANGLE_FAN, 5, GL_UNSIGNED_INT, (void*)(61 * sizeof(unsigned int)));
+		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(66 * sizeof(unsigned int)));
+		glDrawElements(GL_TRIANGLES, 21, GL_UNSIGNED_INT, (void*)(69 * sizeof(unsigned int)));
+		// COLA
+		glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, (void*)(90 * sizeof(unsigned int)));
+		glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, (void*)(99 * sizeof(unsigned int)));
+		glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, (void*)(103 * sizeof(unsigned int)));
+		// Triangulo E1-C1-D1
+		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(112 * sizeof(unsigned int)));
+		// Triangulo C1-B1-A1
+		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(115 * sizeof(unsigned int)));
+		// PANZA
+		glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, (void*)(118 * sizeof(unsigned int)));
+		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(122 * sizeof(unsigned int)));
+		// PATA TRASERA PRINCIPAL
+		glDrawElements(GL_TRIANGLE_FAN, 9, GL_UNSIGNED_INT, (void*)(125 * sizeof(unsigned int)));
+		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(134 * sizeof(unsigned int)));
+		// PATA TRASERA SECUNDARIA
+		glDrawElements(GL_TRIANGLE_FAN, 6, GL_UNSIGNED_INT, (void*)(137 * sizeof(unsigned int)));
+		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(143 * sizeof(unsigned int)));
+		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(146 * sizeof(unsigned int)));
 
 		glBindVertexArray(0);
 		glUseProgram(0);
