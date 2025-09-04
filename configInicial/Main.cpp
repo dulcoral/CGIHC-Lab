@@ -84,14 +84,25 @@ void myData()
 	float vertices[] = 
 	{
 		// positions   XYZ      // color
+		/*-0.7f, 0.8f, 0.0f,    1.0f, 1.0f, 1.0f,
+		0.3f, 0.8f, 0.0f,     1.0f, 1.0f, 0.0f,
+	    0.3f, 0.6f, 0.0f,     1.0f, 0.0f, 1.0f,
+		0.0f, 0.6f, 0.0f,     0.0f, 1.0f, 1.0f,
+		0.0f, 0.4f, 0.0f,     0.0f, 0.0f, 1.0f,
+		0.15f, 0.4f, 0.0f,    0.0f, 1.0f, 0.0f,
+		0.15f, 0.2f, 0.0f,    1.0f, 1.0f, 1.0f,
+		0.0f, 0.2f, 0.0f,     0.26f, 0.58f, 0.367f,
+		0.0f, -0.4f, 0.0f,    1.0f, 1.0f, 1.0f,
+		-0.7f, -0.4f, 0.0f,   1.0f, 1.0f, 1.0f,	*/
+
 		0.10213f, 0.11903f, 0.0f,    0.87f, 0.72f, 0.53f,  // c = 0 (cafe dorado)
-		0.55427f, 0.35793f, 0.0f,    1.0f, 1.0f, 1.0f,  // d = 1 
-		0.82071f, 0.5259f, 0.0f,     1.0f, 1.0f, 1.0f,   // e = 2
-		0.82205f, 0.48947f, 0.0f,    1.0f, 1.0f, 1.0f,   // f = 3
-		0.85493f, 0.49658f, 0.0f,    1.0f, 1.0f, 1.0f,   // g = 4
+		0.55427f, 0.35793f, 0.0f,    0.87f, 0.72f, 0.53f,  // d = 1
+		0.82071f, 0.5259f, 0.0f,     1.0f, 0.5f, 0.0f,   // e = 2 (naranja)
+		0.82205f, 0.48947f, 0.0f,    1.0f, 0.5f, 0.0f,   // f = 3 (naranja)
+		0.85493f, 0.49658f, 0.0f,    1.0f, 0.5f, 0.0f,   // g = 4 (naranja)
 		0.80561f, 0.40816f, 0.0f,    0.87f, 0.72f, 0.53f,  // h = 5
 		0.87254f, 0.27944f, 0.0f,    0.87f, 0.72f, 0.53f,  // i = 6
-		0.98644f, 0.16747f, 0.0f,    0.87f, 0.72f, 0.53f, // j = 7
+		0.98644f, 0.16747f, 0.0f,    0.87f, 0.72f, 0.53f,  // j = 7
 		0.91115f, 0.07867f, 0.0f,    0.87f, 0.72f, 0.53f,  // k = 8
 		0.76926f, 0.09508f, 0.0f,    0.87f, 0.72f, 0.53f,  // l = 9
 		0.77698f, 0.1723f, 0.0f,     0.87f, 0.72f, 0.53f,  // m = 10
@@ -139,16 +150,47 @@ void myData()
 		0.44091f, -0.68633f, 0.0f,   0.87f, 0.72f, 0.53f,  // g2 = 52
 		0.47851f, -0.71036f, 0.0f,   0.87f, 0.72f, 0.53f,  // h2 = 53
 		0.47753f, -0.75773f, 0.0f,   0.87f, 0.72f, 0.53f,  // i2 = 54
-		0.44019f, -0.7617f, 0.0f,    0.87f, 0.72f, 0.53f   // j2 = 55
+		0.44019f, -0.7617f, 0.0f,    0.87f, 0.72f, 0.53f,  // j2 = 55
+		0.55427f, 0.35793f, 0.0f,    1.0f, 0.5f, 0.0f,   // d_oreja = 56 (naranja)
+		0.80561f, 0.40816f, 0.0f,    1.0f, 0.5f, 0.0f,   // h_oreja = 57 (naranja)
+		// Vertices duplicados para pata trasera principal (blanco-beige)
+		-0.42771f, -0.4828f, 0.0f,   0.96f, 0.91f, 0.84f,  // b1_pata = 58
+		-0.61382f, -0.5025f, 0.0f,   0.96f, 0.91f, 0.84f,  // c1_pata = 59
+		-0.71644f, -0.60133f, 0.0f,  0.96f, 0.91f, 0.84f,  // k1_pata = 60
+		-0.74782f, -0.86267f, 0.0f,  0.96f, 0.91f, 0.84f,  // l1_pata = 61
+		-0.66233f, -0.86213f, 0.0f,  0.96f, 0.91f, 0.84f,  // m1_pata = 62
+		-0.68289f, -0.82046f, 0.0f,  0.96f, 0.91f, 0.84f,  // n1_pata = 63
+		-0.66125f, -0.71008f, 0.0f,  0.96f, 0.91f, 0.84f,  // o1_pata = 64
+		-0.61309f, -0.65002f, 0.0f,  0.96f, 0.91f, 0.84f,  // p1_pata = 65
+		-0.56602f, -0.58888f, 0.0f,  0.96f, 0.91f, 0.84f,  // q1_pata = 66
+		-0.51407f, -0.54776f, 0.0f,  0.96f, 0.91f, 0.84f,  // r1_pata = 67
+		// Vertices duplicados para cola (rosa degradado)
+		-0.2453f, -0.20833f, 0.0f,   1.0f, 0.8f, 0.9f,   // u_cola = 68 (rosa claro)
+		-0.34738f, -0.12465f, 0.0f,  1.0f, 0.75f, 0.85f, // v_cola = 69 (rosa)
+		-0.52502f, 0.03232f, 0.0f,   1.0f, 0.7f, 0.8f,   // w_cola = 70 (rosa)
+		-0.38941f, -0.23006f, 0.0f,  1.0f, 0.65f, 0.75f, // d1_cola = 71 (rosa medio)
+		-0.61588f, -0.25751f, 0.0f,  1.0f, 0.6f, 0.7f,   // e1_cola = 72 (rosa medio)
+		-0.71312f, -0.33438f, 0.0f,  1.0f, 0.55f, 0.65f, // f1_cola = 73 (rosa intenso)
+		-0.95694f, -0.27839f, 0.0f,  1.0f, 0.5f, 0.6f,   // g1_cola = 74 (rosa intenso)
+		-0.9406f, -0.19089f, 0.0f,   1.0f, 0.45f, 0.55f, // h1_cola = 75 (rosa más intenso)
+		-0.80642f, -0.20904f, 0.0f,  1.0f, 0.7f, 0.8f,   // i1_cola = 76 (rosa)
+		-0.6625f, -0.12435f, 0.0f,   1.0f, 0.75f, 0.85f,  // j1_cola = 77 (rosa)
+		// Vertices duplicados para pata delantera (amarillo suave)
+		0.40221f, -0.25714f, 0.0f,   1.0f, 1.0f, 0.7f,   // q_pata = 78 (amarillo suave)
+		0.23837f, -0.35895f, 0.0f,   1.0f, 1.0f, 0.7f,   // r_pata = 79 (amarillo suave)
+		0.28688f, -0.80794f, 0.0f,   1.0f, 1.0f, 0.7f,   // z1_pata = 80 (amarillo suave)
+		0.38988f, -0.81356f, 0.0f,   1.0f, 1.0f, 0.7f,   // a2_pata = 81 (amarillo suave)
+		0.34606f, -0.71918f, 0.0f,   1.0f, 1.0f, 0.7f,   // b2_pata = 82 (amarillo suave)
+		0.36962f, -0.34723f, 0.0f,   1.0f, 1.0f, 0.7f    // c2_pata = 83 (amarillo suave)
 	};
 
 	unsigned int indices[] =
 	{
 		// Primera oreja (triangle_fan desde D)
-		1, 2, 3, 4,    // d(pivote), e, f, g
+		56, 2, 3, 4,    // d_oreja(pivote), e, f, g
         
 		// Segunda oreja (triangle_fan desde H)
-		5, 4, 3, 1,    // h(pivote), g, f, d
+		57, 4, 3, 56,    // h_oreja(pivote), g, f, d_oreja
 
 		// CABEZA (pivote D=1)
 		1, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14,
@@ -174,15 +216,15 @@ void myData()
 		0, 19, 20,
 		0, 20, 21,
 
-		// PATA DELANTERA - O-Q-C2-D2 (dos triangulos)
-		12, 14, 48,
-		12, 48, 49
-		,
-		// FAN superior con pivote C2: C2,Q,R,Z1,B2
-		48, 14, 15, 45, 47,
-		// Triangulo independiente para cerrar Z1-A2-B2
-		47, 45, 46,
-		// PIE: 7 triangulos especificados
+		// PATA DELANTERA - O-Q_pata-C2_pata-D2 (dos triángulos)
+		12, 78, 83,
+		12, 83, 49,
+
+		// FAN superior con pivote C2_pata: C2_pata,Q_pata,R_pata,Z1_pata,B2_pata
+		83, 78, 79, 80, 82,
+		// Triángulo independiente para cerrar Z1_pata-A2_pata-B2_pata
+		82, 80, 81,
+		// PIE: 7 triángulos especificados (color base)
 		// D2-C2-E2
 		49, 48, 50,
 		// C2-E2-B2
@@ -198,22 +240,22 @@ void myData()
 		// H2-J2-I2
 		53, 55, 54,
 
-		// COLA: V,U,D1 y E1,V,D1 y E1,V,W
-		// V(19), U(18), D1(25)
+		// COLA: V,U,D1 y E1,V,D1 - color base; resto rosa degradado
+		// V(19), U(18), D1(25) - color base
 		19, 18, 25,
-		// E1(26), V(19), D1(25)
+		// E1(26), V(19), D1(25) - color base
 		26, 19, 25,
-		// E1(26), V(19), W(20)
+		// E1(26), V(19), W(20) - color base
 		26, 19, 20,
-		// FAN cola con pivote E1: E1, W, J1, I1
-		26, 20, 31, 30,
+		// FAN cola con pivote E1_cola: E1_cola, W_cola, J1_cola, I1_cola
+		72, 70, 77, 76,
 		// Segmentos restantes de la cola
-		// E1-I1-F1
-		26, 30, 27,
-		// F1-I1-G1
-		27, 30, 28,
-		// I1-G1-H1
-		30, 28, 29
+		// E1_cola-I1_cola-F1_cola
+		72, 76, 73,
+		// F1_cola-I1_cola-G1_cola
+		73, 76, 74,
+		// I1_cola-G1_cola-H1_cola
+		76, 74, 75
 
 		,
 		// Muslo y Panza
@@ -227,12 +269,11 @@ void myData()
 		// C1(24), D1(25), A1(22)
 		24, 25, 22,
 		// PATA TRASERA PRINCIPAL
-		// Fan con pivote K1: K1, C1, B1, R1, Q1, P1, O1, N1, L1
-		32, 24, 23, 39, 38, 37, 36, 35, 33,
-		// Triangulo N1-L1-M1
-		35, 33, 34
+		// Fan con pivote K1_pata: K1_pata, C1_pata, B1_pata, R1_pata, Q1_pata, P1_pata, O1_pata, N1_pata, L1_pata
+		60, 59, 58, 67, 66, 65, 64, 63, 61,
+		// Triangulo N1_pata-L1_pata-M1_pata
+		63, 61, 62,
 
-		,
 		// PATA TRASERA SECUNDARIA
 		// Fan con pivote W1: W1, V1, T1, S1, Q1, P1
 		44, 43, 41, 40, 38, 37,
@@ -369,35 +410,35 @@ int main()
 		//glDrawArrays(GL_TRIANGLE_FAN, 0, 10);
 		//glDrawArrays(GL_POINTS, 3, 1);
 
-		// orejas
+		// Primero: cabeza con degradado
+		glDrawElements(GL_TRIANGLE_FAN, 11, GL_UNSIGNED_INT, (void*)(8 * sizeof(unsigned int)));
+
+		// Después: orejas en naranja sólido  
 		glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, (void*)(0 * sizeof(unsigned int)));
 		glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, (void*)(4 * sizeof(unsigned int)));
 
-		// cabeza
-		glDrawElements(GL_TRIANGLE_FAN, 11, GL_UNSIGNED_INT, (void*)(8 * sizeof(unsigned int)));
-
-		// TORSO - CUELLO
+		// 3) TRI_TORSO_CUELLO
 		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, (void*)(19 * sizeof(unsigned int)));
-		// PATA DELANTERA
+		// 4) PATA DELANTERA
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(55 * sizeof(unsigned int)));
 		glDrawElements(GL_TRIANGLE_FAN, 5, GL_UNSIGNED_INT, (void*)(61 * sizeof(unsigned int)));
 		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(66 * sizeof(unsigned int)));
 		glDrawElements(GL_TRIANGLES, 21, GL_UNSIGNED_INT, (void*)(69 * sizeof(unsigned int)));
-		// COLA
+		// 5) COLA
 		glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, (void*)(90 * sizeof(unsigned int)));
 		glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, (void*)(99 * sizeof(unsigned int)));
 		glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, (void*)(103 * sizeof(unsigned int)));
-		// Triangulo E1-C1-D1
+		// 6) Triángulo E1-C1-D1
 		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(112 * sizeof(unsigned int)));
-		// Triangulo C1-B1-A1
+		// 7) Triángulo C1-B1-A1
 		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(115 * sizeof(unsigned int)));
-		// PANZA
+		// 8) PANZA
 		glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, (void*)(118 * sizeof(unsigned int)));
 		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(122 * sizeof(unsigned int)));
-		// PATA TRASERA PRINCIPAL
+		// 9) PATA TRASERA PRINCIPAL
 		glDrawElements(GL_TRIANGLE_FAN, 9, GL_UNSIGNED_INT, (void*)(125 * sizeof(unsigned int)));
 		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(134 * sizeof(unsigned int)));
-		// PATA TRASERA SECUNDARIA
+		// 10) PATA TRASERA SECUNDARIA
 		glDrawElements(GL_TRIANGLE_FAN, 6, GL_UNSIGNED_INT, (void*)(137 * sizeof(unsigned int)));
 		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(143 * sizeof(unsigned int)));
 		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(146 * sizeof(unsigned int)));
