@@ -7,7 +7,8 @@ CXXFLAGS = -std=c++11 -Wall -Wextra -O2
 
 # Rutas de include
 INCLUDES = -I/opt/homebrew/opt/glfw/include \
-           -I/opt/homebrew/opt/glew/include
+           -I/opt/homebrew/opt/glew/include \
+           -Iinclude_local
 
 # Rutas de bibliotecas
 LIBDIRS = -L/opt/homebrew/opt/glfw/lib \
