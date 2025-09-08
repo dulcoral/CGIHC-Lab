@@ -3,9 +3,6 @@
 /*-----------------    2026-1   ---------------------------*/
 /*-------------Alumno: Dulce Coral Rodriguez Garcia ---------------*/
 /*-------Cuenta:   313144545                 ------------------*/
-#include<iostream>
-
-//#define GLEW_STATIC
 
 #include <GL/glew.h>
 
@@ -16,6 +13,8 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <shader_m.h>
+
+#include <iostream>
 
 
 void resize(GLFWwindow* window, int width, int height);
@@ -31,10 +30,92 @@ GLuint VBO[2], VAO[2], EBO[2];
 
 void myData(void);
 void getResolution(void);
+void renderEmoji(Shader& shader);
+
+// Helpers para render 2D tipo grilla
+inline void setColor(Shader& shader, const glm::vec3& c);
+inline void drawPixel(Shader& shader, int col, int row);
+// Devuelve el color de la celda segun las reglas del emoji
+glm::vec3 cellColor(int col, int row);
 
 //For Keyboard
+float posX = 0.0f,
+	  posY = 0.0f,
+	  posZ = -8.0f;
 
+float rotY = 0.0f,
+	  rotX = 0.0f,
+	  rotZ = 0.0f;
 
+// Parámetros de la grilla 2D y colores para el emoji
+static const int GRID_W = 15;
+static const int GRID_H = 15;
+static const float PIXEL_STEP = 1.0f;
+static const glm::vec3 ORIGIN_2D = glm::vec3(-7.0f, 7.0f, 0.0f);
+
+// Paleta de colores (RGB en 0..1)
+const glm::vec3 COL_TRANSP = glm::vec3(-1.0f);      // marcador de celda vacía
+const glm::vec3 COL_ORANGE = glm::vec3(1.0f, 0.5f, 0.0f);
+const glm::vec3 COL_YELLOW = glm::vec3(1.0f, 1.0f, 0.0f);
+const glm::vec3 COL_RED    = glm::vec3(1.0f, 0.0f, 0.0f);
+const glm::vec3 COL_BROWN  = glm::vec3(0.45f, 0.30f, 0.10f);
+
+inline void setColor(Shader& shader, const glm::vec3& c) {
+	shader.setVec3("aColor", c);
+}
+
+inline void drawPixel(Shader& shader, int col, int row) {
+	glm::mat4 model = glm::translate(
+		glm::mat4(1.0f),
+		ORIGIN_2D + glm::vec3(col * PIXEL_STEP, -row * PIXEL_STEP, 0.0f)
+	);
+	shader.setMat4("model", model);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+}
+
+// Regla de color para cada celda 15x15 basada en la imagen del emoji
+glm::vec3 cellColor(int col, int row) {
+	// Matriz fija: 0=fondo, 1=naranja, 2=amarillo, 3=rojo, 4=café
+	static const int POS[15][15] = {
+		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+		{0,0,0,0,0,1,1,1,1,1,0,0,0,0,0},
+		{0,0,0,1,1,2,2,2,2,2,1,1,0,0,0},
+		{0,0,1,2,2,2,2,2,2,2,2,2,1,0,0},
+		{0,0,3,3,2,3,3,2,3,3,2,3,3,0,0},
+		{0,1,3,3,3,3,3,2,3,3,3,3,3,1,0},
+		{0,1,3,3,3,3,3,2,3,3,3,3,3,1,0},
+		{0,1,2,3,3,3,2,2,2,3,3,3,2,1,0},
+		{0,1,2,2,3,2,2,2,2,2,3,2,2,1,0},
+		{0,1,2,2,2,2,2,2,2,2,2,2,2,1,0},
+		{0,0,1,2,2,4,2,2,2,4,2,2,1,0,0},
+		{0,0,1,2,2,2,4,4,4,2,2,2,1,0,0},
+		{0,0,0,1,1,2,2,2,2,2,1,1,0,0,0},
+		{0,0,0,0,0,1,1,1,1,1,0,0,0,0,0},
+		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
+	};
+
+	int v = POS[row][col];
+	switch (v) {
+		case 1: return COL_ORANGE;
+		case 2: return COL_YELLOW;
+		case 3: return COL_RED;
+		case 4: return COL_BROWN;
+		default: return COL_TRANSP; // 0 => fondo
+	}
+}
+
+void renderEmoji(Shader& shader) {
+	glBindVertexArray(VAO[0]);
+	for (int r = 0; r < GRID_H; ++r) {
+		for (int c = 0; c < GRID_W; ++c) {
+			glm::vec3 color = cellColor(c, r);
+			if (color.x < 0.0f) continue;
+			setColor(shader, color);
+			drawPixel(shader, c, r);
+		}
+	}
+	glBindVertexArray(0);
+}
 
 void getResolution()
 {
@@ -200,8 +281,8 @@ int main()
 	glm::mat4 projectionOp = glm::mat4(1.0f);	//This matrix is for Projection
 
 	//Use "projection" in order to change how we see the information
-	//projectionOp = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-	projectionOp = glm::ortho(-5.0f, 5.0f, -3.0f, 3.0f, 0.1f, 10.0f);
+	projectionOp = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+	//projectionOp = glm::ortho(-5.0f, 5.0f, -3.0f, 3.0f, 0.1f, 10.0f);
 
     // render loop
     // While the windows is not closed
@@ -219,30 +300,21 @@ int main()
 		//Mi funci�n de dibujo
 		/*******************************************/
 		//Use "view" in order to affect all models
-		viewOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+		viewOp = glm::translate(glm::mat4(1.0f), glm::vec3(posX, posY, posZ));
+		viewOp = glm::rotate(viewOp, glm::radians(rotY), glm::vec3(0.0f, 1.0f, 0.0f));
+		viewOp = glm::rotate(viewOp, glm::radians(rotX), glm::vec3(1.0f, .0f, 0.0f));
+		viewOp = glm::rotate(viewOp, glm::radians(rotZ), glm::vec3(0.0f, .0f, 1.0f));
+
+
 		// pass them to the shaders
 		myShader.setMat4("model", modelOp);
 		myShader.setMat4("view", viewOp);
 		// note: currently we set the projection matrix each frame, but since the projection matrix rarely changes it's often best practice to set it outside the main loop only once.
 		myShader.setMat4("projection", projectionOp);
-		
-		//Get the data from container 1
-		glBindVertexArray(VAO[1]);	//Enable data array [1]
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[1]); //Only if we are going to work with index
 
-		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-		myShader.setMat4("model", modelOp);
-		//glDrawArrays(GL_LINE_LOOP, 0, 8); //My C
-		glDrawElements(GL_TRIANGLE_FAN, 6, GL_UNSIGNED_INT, (void*)(0 * sizeof(float)));	//to Draw using index
-		glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_INT, (void*)(6 * sizeof(float)));	//to Draw using index
+		// Dibujo del emoji
+		renderEmoji(myShader);
 
-
-		/*-------------------Second figure-------------------*/
-		//Get the data from container 0
-		//glBindVertexArray(VAO[0]);	//Enable data array [0]
-		//modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(1.5f, 0.0f, 0.0f));
-		//myShader.setMat4("model", modelOp);
-		//glDrawArrays(GL_TRIANGLES, 0, 36); //My Cube
 
 		glBindVertexArray(0);
 		/*****************************************************************/
@@ -265,6 +337,39 @@ void my_input(GLFWwindow *window)
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)  //GLFW_RELEASE
         glfwSetWindowShouldClose(window, true);
 
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		posX -= 0.03f;
+
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		posX += 0.03f;
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		posY += 0.03f;
+
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		posY -= 0.03f;
+
+	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+		posZ += 0.03f;
+
+	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
+		posZ -= 0.03f;
+
+	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+		rotY += 1.0f;
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+		rotY -= 1.0f;
+
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+		rotX += 1.0f;
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+		rotX -= 1.0f;
+
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+		rotZ += 1.0f;	
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+		rotZ -= 1.0f;	
+	
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
