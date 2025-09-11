@@ -2,6 +2,7 @@
 #define MODEL_ANIM_H
 
 #include <glad/glad.h> 
+#include <SDL3/SDL.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
