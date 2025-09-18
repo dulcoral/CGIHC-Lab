@@ -1,8 +1,8 @@
 /*---------------------------------------------------------*/
-/* ----------------   Pr�ctica  --------------------------*/
+/* ----------------   Pr�ctica 4 --------------------------*/
 /*-----------------    2026-1   ---------------------------*/
-/*------------- Alumno:                     ---------------*/
-/*------------- No. Cuenta                  ---------------*/
+/*------------- Alumno: Dulce Coral Rodriguez Garcia    ---------------*/
+/*------------- No. Cuenta 313144545     ---------------*/
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -19,7 +19,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>					//Texture
 
-// Removed SDL3 usage to avoid conflicts on macOS; use GLFW timers instead
+#define SDL_MAIN_HANDLED
+#include <SDL3/SDL.h>
+
 
 #include <shader_m.h>
 #include <camera.h>
@@ -63,13 +65,13 @@ bool firstMouse = true;
 //Timing
 const int FPS = 60;
 const int LOOP_TIME = 1000 / FPS; // = 16 milisec // 1000 millisec == 1 sec
-double	deltaTime = 0.0f,
+double	deltaTime = 5.0f,
 lastFrame = 0.0f;
 
 void getResolution(void);
 void myData(void);							// De la practica 4
 void LoadTextures(void);					// De la pr�ctica 6
-unsigned int generateTextures(const char*, bool, bool);	// De la pr�ctica 6
+unsigned int generateTextures(char*, bool, bool);	// De la pr�ctica 6
 
 //For Keyboard
 float	movX = 0.0f,
@@ -199,14 +201,15 @@ unsigned int generateTextures(const char* filename, bool alfa, bool isPrimitive)
 		else
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
-		stbi_image_free(data);
 		return textureID;
 	}
 	else
 	{
-		std::cout << "Failed to load texture: " << filename << std::endl;
-		return 0u;
+		std::cout << "Failed to load texture" << std::endl;
+		return 100;
 	}
+
+	stbi_image_free(data);
 }
 
 void LoadTextures()
@@ -265,18 +268,9 @@ void animate(void)
 }
 
 void getResolution() {
-	const GLFWvidmode* mode = nullptr;
-	if (monitors) {
-		mode = glfwGetVideoMode(monitors);
-	}
-	if (mode) {
-		SCR_WIDTH = mode->width;
-		SCR_HEIGHT = (mode->height) - 80;
-	} else {
-		std::cerr << "GLFW: no primary monitor detected; using fallback 800x600" << std::endl;
-		SCR_WIDTH = 800;
-		SCR_HEIGHT = 600;
-	}
+	const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+	SCR_WIDTH = mode->width;
+	SCR_HEIGHT = (mode->height) - 80;
 }
 
 void myData() {
@@ -403,29 +397,17 @@ void myData() {
 }
 
 int main() {
-	// glfw: initialize and configure
-	glfwSetErrorCallback(glfw_error_callback);
-	// Avoid menu bar and resource dir changes that can crash on some macOS setups
-	glfwInitHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
-	glfwInitHint(GLFW_COCOA_CHDIR_RESOURCES, GLFW_FALSE);
-	if (!glfwInit()) {
-		std::cerr << "Failed to initialize GLFW" << std::endl;
-		return -1;
-	}
-	std::cerr << "[dbg] glfwInit OK" << std::endl;
+    // glfw: initialize and configure
+	glfwInit();
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	// Request a modern context on macOS
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef __APPLE__
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-
+	#ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // uncomment this statement to fix compilation on OS X
+    #endif
 	// glfw window creation
 	monitors = glfwGetPrimaryMonitor();
 	getResolution();
-	std::cerr << "[dbg] resolution " << SCR_WIDTH << "x" << SCR_HEIGHT << std::endl;
 
 	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Pratica X 2026-1", NULL, NULL);
 	if (window == NULL) {
@@ -433,10 +415,8 @@ int main() {
 		glfwTerminate();
 		return -1;
 	}
-	std::cerr << "[dbg] window created" << std::endl;
 	glfwSetWindowPos(window, 0, 30);
 	glfwMakeContextCurrent(window);
-	std::cerr << "[dbg] context current" << std::endl;
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
@@ -452,18 +432,13 @@ int main() {
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
-	std::cerr << "[dbg] glad initialized" << std::endl;
 
 	// configure global opengl state
 	// -----------------------------
 	//Mis funciones
 	//Datos a utilizar
-	std::cerr << "[dbg] before LoadTextures" << std::endl;
 	LoadTextures();
-	std::cerr << "[dbg] after LoadTextures" << std::endl;
-	std::cerr << "[dbg] before myData" << std::endl;
 	myData();
-	std::cerr << "[dbg] after myData" << std::endl;
 	glEnable(GL_DEPTH_TEST);
 
 	
@@ -471,11 +446,11 @@ int main() {
 	// build and compile shaders
 	// -------------------------
 	Shader myShader("shaders/shader_texture_color.vs", "shaders/shader_texture_color.fs"); //To use with primitives
-	Shader staticShader("shaders/shader_Lights.vs", "shaders/shader_Lights_mod.fs");	//To use with static models
-	Shader skyboxShader("shaders/skybox.vs", "shaders/skybox.fs");	//To use with skybox
-	Shader animShader("shaders/anim.vs", "shaders/anim.fs");	//To use with animated models 
+	Shader staticShader("Shaders/shader_Lights.vs", "Shaders/shader_Lights_mod.fs");	//To use with static models
+	Shader skyboxShader("Shaders/skybox.vs", "Shaders/skybox.fs");	//To use with skybox
+	Shader animShader("Shaders/anim.vs", "Shaders/anim.fs");	//To use with animated models 
 	
-	std::vector<std::string> faces{
+	vector<std::string> faces{
 		"resources/skybox/right.jpg",
 		"resources/skybox/left.jpg",
 		"resources/skybox/top.jpg",
@@ -493,12 +468,14 @@ int main() {
 
 	// load models
 	// -----------
-	Model piso("resources/objects/piso/Piso.obj");
-	Model carro("resources/objects/Lambo/Carroceria.obj");
-	Model llanta("resources/objects/Lambo/Wheel.obj");
-	Model casaVieja("resources/objects/Casa/OldHouse.obj");
+	Model piso("resources/objects/piso/piso.obj");
+	Model carro("resources/objects/lambo/carroceria.obj");
+	Model llanta("resources/objects/lambo/Wheel.obj");
+	Model casaVieja("resources/objects/casa/OldHouse.obj");
 	//Model cubo("resources/objects/cubo/cube02.obj");
 	Model casaDoll("resources/objects/Casa/DollHouse.obj");
+	Model casaBruja("resources/objects/CasaBrujas/brujas.obj");
+	Model caja("resources/objects/Caja/cajaTextura.obj");
 
 	ModelAnim animacionPersonaje("resources/objects/Personaje1/Arm.dae");
 	animacionPersonaje.initShaders(animShader.ID);
@@ -528,7 +505,7 @@ int main() {
 
 		// per-frame time logic
 		// --------------------
-		lastFrame = glfwGetTime() * 1000.0;
+		lastFrame = SDL_GetTicks();
 
 		// input
 		// -----
@@ -678,6 +655,18 @@ int main() {
 		staticShader.setMat4("projection", projectionOp);
 		staticShader.setMat4("view", viewOp);
 
+		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(250.0f, 0.0f, 130.0f));
+		modelOp = glm::rotate(modelOp, glm::radians(-180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		modelOp = glm::scale(modelOp, glm::vec3(5.0f));
+		staticShader.setMat4("model", modelOp);
+		casaBruja.Draw(staticShader);
+
+		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(100.0f, 0.0f, -10.0f));
+		modelOp = glm::rotate(modelOp, glm::radians(-180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		modelOp = glm::scale(modelOp, glm::vec3(5.0f));
+		staticShader.setMat4("model", modelOp);
+		caja.Draw(staticShader);
+
 		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(250.0f, 0.0f, -10.0f));
 		modelOp = glm::rotate(modelOp, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		staticShader.setMat4("model", modelOp);
@@ -803,10 +792,10 @@ int main() {
 		skybox.Draw(skyboxShader, viewOp, projectionOp, camera);
 
 		// Limitar el framerate a 60
-		deltaTime = (glfwGetTime() * 1000.0) - lastFrame; // time for full 1 loop
+		deltaTime = SDL_GetTicks() - lastFrame; // time for full 1 loop
 		if (deltaTime < LOOP_TIME)
 		{
-			glfwWaitEventsTimeout((LOOP_TIME - deltaTime) / 1000.0);
+			SDL_Delay((int)(LOOP_TIME - deltaTime));
 		}
 
 		
@@ -817,8 +806,8 @@ int main() {
 	}
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	// ------------------------------------------------------------------
-	glDeleteVertexArrays(3, VAO);
-	glDeleteBuffers(3, VBO);
+	glDeleteVertexArrays(2, VAO);
+	glDeleteBuffers(2, VBO);
 	//skybox.Terminate();
 	glfwTerminate();
 	return 0;

@@ -15,7 +15,7 @@ CC           := clang
 SRC_CPP      := Main.cpp
 SRC_C        := glad.c
 
-INCLUDE_DIRS := -I$(PROJECT_ROOT)/include -I$(PROJECT_ROOT)/include/glad -I$(PROJECT_ROOT)
+INCLUDE_DIRS := $(PKG_SDL3_CFLAGS) -I$(PROJECT_ROOT)/include -I$(PROJECT_ROOT)/include/glad -I$(PROJECT_ROOT)
 
 # Detección de Homebrew y pkg-config
 BREW_PREFIX  := $(shell brew --prefix 2>/dev/null)

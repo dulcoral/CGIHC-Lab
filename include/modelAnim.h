@@ -2,7 +2,6 @@
 #define MODEL_ANIM_H
 
 #include <glad/glad.h> 
-#include <SDL3/SDL.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -348,9 +347,8 @@ private:
 				return i; // �� ������� ������ �������� !!!!!!!!!!!!!!!!!! ����������������������������
 			}
 		}
-
-		assert(0);
-		return 0;
+		// Si no se encuentra una clave en el bucle, devuelve la última clave de rotación.
+		return p_node_anim->mNumRotationKeys - 1;
 	}
 
 	uint findScaling(float p_animation_time, const aiNodeAnim* p_node_anim)
@@ -399,11 +397,30 @@ private:
 
 		uint rotation_index = findRotation(p_animation_time, p_node_anim); // ������ ������ �������� ����� ������� ������
 		uint next_rotation_index = rotation_index + 1; // ������ ��������� �������� �����
-		assert(next_rotation_index < p_node_anim->mNumRotationKeys);
+
+		if (next_rotation_index >= p_node_anim->mNumRotationKeys) {
+			// Si next_rotation_index está fuera de los límites, no hay una clave siguiente para interpolar.
+			// En este caso, simplemente usamos la clave actual y el factor será 0.0f o 1.0f dependiendo de la lógica.
+			// Para evitar errores y mantener la animación en la última pose, configuramos factor a 0.0f
+			next_rotation_index = rotation_index;
+		}
+
 		// ���� ����� �������
 		float delta_time = (float)(p_node_anim->mRotationKeys[next_rotation_index].mTime - p_node_anim->mRotationKeys[rotation_index].mTime);
 		// ������ = (���� ������� ������ �� ������ �������� ��������� �����) / �� ���� ����� �������
-		float factor = (p_animation_time - (float)p_node_anim->mRotationKeys[rotation_index].mTime) / delta_time;
+
+		float factor;
+
+		if (delta_time == 0.0f) {
+			factor = 0.0f; // Evita división por cero, usa la clave actual sin interpolación
+		}
+		else {
+			factor = (p_animation_time - (float)p_node_anim->mRotationKeys[rotation_index].mTime) / delta_time;
+		}
+
+		// Asegurarse de que el factor esté dentro del rango [0.0f, 1.0f]
+		if (factor < 0.0f) factor = 0.0f;
+		if (factor > 1.0f) factor = 1.0f;
 
 		//cout << "p_node_anim->mRotationKeys[rotation_index].mTime: " << p_node_anim->mRotationKeys[rotation_index].mTime << endl;
 		//cout << "p_node_anim->mRotationKeys[next_rotaion_index].mTime: " << p_node_anim->mRotationKeys[next_rotation_index].mTime << endl;
