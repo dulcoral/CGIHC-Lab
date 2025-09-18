@@ -40,15 +40,19 @@ public:
     vector<Vertex> vertices;
     vector<unsigned int> indices;
     vector<Texture> textures;
+    glm::vec3 diffuseColor; // Nuevo: color difuso sólido
+    bool hasDiffuseTexture; // Nuevo: bandera para indicar si hay textura difusa
     unsigned int VAO;
 
     /*  Functions  */
     // constructor
-    Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures)
+    Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures, glm::vec3 diffuseColor, bool hasDiffuseTexture)
     {
         this->vertices = vertices;
         this->indices = indices;
         this->textures = textures;
+        this->diffuseColor = diffuseColor;
+        this->hasDiffuseTexture = hasDiffuseTexture;
 
         // now that we have all the required data, set the vertex buffers and its attribute pointers.
         setupMesh();
@@ -83,6 +87,11 @@ public:
             glBindTexture(GL_TEXTURE_2D, textures[i].id);
         }
         
+        shader.setBool("hasDiffuseTexture", hasDiffuseTexture);
+        if (!hasDiffuseTexture) {
+            shader.setVec3("material_color_diffuse", diffuseColor);
+        }
+
         // draw mesh
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);

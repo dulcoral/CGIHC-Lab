@@ -446,7 +446,7 @@ int main() {
 	// build and compile shaders
 	// -------------------------
 	Shader myShader("shaders/shader_texture_color.vs", "shaders/shader_texture_color.fs"); //To use with primitives
-	Shader staticShader("Shaders/shader_Lights.vs", "Shaders/shader_Lights_mod.fs");	//To use with static models
+	Shader staticShader("Shaders/shader_Lights.vs", "Shaders/shader_Lights.fs");	//To use with static models
 	Shader skyboxShader("Shaders/skybox.vs", "Shaders/skybox.fs");	//To use with skybox
 	Shader animShader("Shaders/anim.vs", "Shaders/anim.fs");	//To use with animated models 
 	
@@ -476,6 +476,8 @@ int main() {
 	Model casaDoll("resources/objects/Casa/DollHouse.obj");
 	Model casaBruja("resources/objects/CasaBrujas/brujas.obj");
 	Model caja("resources/objects/Caja/cajaTextura.obj");
+	Model mimikyu("resources/objects/Mimikyu/mimikyu.obj");
+	Model r2d2("resources/objects/R2D2/r2d2.obj");
 
 	ModelAnim animacionPersonaje("resources/objects/Personaje1/Arm.dae");
 	animacionPersonaje.initShaders(animShader.ID);
@@ -654,6 +656,18 @@ int main() {
 		staticShader.use();
 		staticShader.setMat4("projection", projectionOp);
 		staticShader.setMat4("view", viewOp);
+
+		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(50.0f, 0.0f, 10.0f));
+		modelOp = glm::rotate(modelOp, glm::radians(-180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		modelOp = glm::scale(modelOp, glm::vec3(5.0f));
+		staticShader.setMat4("model", modelOp);
+		mimikyu.Draw(staticShader);
+
+		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(100.0f, 0.0f, -50.0f));
+		modelOp = glm::rotate(modelOp, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		modelOp = glm::scale(modelOp, glm::vec3(5.0f));
+		staticShader.setMat4("model", modelOp);
+		r2d2.Draw(staticShader);
 
 		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(250.0f, 0.0f, 130.0f));
 		modelOp = glm::rotate(modelOp, glm::radians(-180.0f), glm::vec3(0.0f, 1.0f, 0.0f));

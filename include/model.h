@@ -150,10 +150,10 @@ private:
         // normal: texture_normalN
 
         // 1. diffuse maps
-        vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+        vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "material_diffuse");
         textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
         // 2. specular maps
-        vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
+        vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "material_specular");
         textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
         // 3. normal maps
         std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
@@ -161,9 +161,19 @@ private:
         // 4. height maps
         std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
         textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+
+        // Nuevo: Obtener el color difuso y determinar si hay textura difusa
+        glm::vec3 diffuseColor = glm::vec3(1.0f); // Valor por defecto (blanco)
+        bool hasDiffuseTexture = (diffuseMaps.size() > 0);
+
+        if (!hasDiffuseTexture) {
+            aiColor3D color(0.0f, 0.0f, 0.0f);
+            material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
+            diffuseColor = glm::vec3(color.r, color.g, color.b);
+        }
         
         // return a mesh object created from the extracted mesh data
-        return Mesh(vertices, indices, textures);
+        return Mesh(vertices, indices, textures, diffuseColor, hasDiffuseTexture);
     }
 
     // checks all material textures of a given type and loads the textures if they're not loaded yet.

@@ -62,6 +62,8 @@ uniform SpotLight spotLight;
 uniform sampler2D material_diffuse;
 uniform sampler2D material_specular;
 uniform float material_shininess;
+uniform vec3 material_color_diffuse; // Nuevo: color difuso sólido
+uniform bool hasDiffuseTexture;      // Nuevo: bandera para indicar si hay textura difusa
 
 // Function prototypes
 vec3 CalcDirLight( DirLight light, vec3 normal, vec3 viewDir );
@@ -86,7 +88,7 @@ void main()
     // Spot light
     //result += CalcSpotLight( spotLight, norm, FragPos, viewDir );
     
-    vec4   texColor = vec4( result,texture( material_diffuse, TexCoords).a );
+    vec4   texColor = vec4( result, (hasDiffuseTexture ? texture( material_diffuse, TexCoords).a : 1.0) );
     if(texColor.a < 0.1)
         discard;
     FragColor = texColor;
@@ -105,9 +107,9 @@ vec3 CalcDirLight( DirLight light, vec3 normal, vec3 viewDir )
     float spec = pow( max( dot( viewDir, reflectDir ), 0.0 ), material_shininess );
     
     // Combine results
-    vec3 ambient = light.ambient * vec3( texture( material_diffuse, TexCoords ).rgb );
-    vec3 diffuse = light.diffuse * diff * vec3( texture( material_diffuse, TexCoords ).rgb );
-    vec3 specular = light.specular * spec * vec3( texture( material_specular, TexCoords ).rgb );
+    vec3 ambient = light.ambient * (hasDiffuseTexture ? vec3( texture( material_diffuse, TexCoords ).rgb ) : material_color_diffuse);
+    vec3 diffuse = light.diffuse * diff * (hasDiffuseTexture ? vec3( texture( material_diffuse, TexCoords ).rgb ) : material_color_diffuse);
+    vec3 specular = light.specular * spec * (hasDiffuseTexture ? vec3( texture( material_specular, TexCoords ).rgb ) : material_color_diffuse);
    
    vec3 result = ambient + diffuse + specular;
 
@@ -131,9 +133,9 @@ vec3 CalcPointLight( PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir )
     float attenuation = 1.0f / ( light.constant + light.linear * distance + light.quadratic * ( distance * distance ) );
     
     // Combine results
-    vec3 ambient = light.ambient * vec3( texture( material_diffuse, TexCoords ).rgb );
-    vec3 diffuse = light.diffuse * diff * vec3( texture( material_diffuse, TexCoords ).rgb );
-    vec3 specular = light.specular * spec * vec3( texture( material_specular, TexCoords ).rgb );
+    vec3 ambient = light.ambient * (hasDiffuseTexture ? vec3( texture( material_diffuse, TexCoords ).rgb ) : material_color_diffuse);
+    vec3 diffuse = light.diffuse * diff * (hasDiffuseTexture ? vec3( texture( material_diffuse, TexCoords ).rgb ) : material_color_diffuse);
+    vec3 specular = light.specular * spec * (hasDiffuseTexture ? vec3( texture( material_specular, TexCoords ).rgb ) : material_color_diffuse);
     
     ambient *= attenuation;
     diffuse *= attenuation;
@@ -156,18 +158,18 @@ vec4 CalcSpotLight( SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir )
     if(theta > light.cutOff) // remember that we're working with angles as cosines instead of degrees so a '>' is used.
     {    
         // ambient
-        vec3 ambient = light.ambient * texture(material_diffuse, TexCoords).rgb;
+        vec3 ambient = light.ambient * (hasDiffuseTexture ? texture(material_diffuse, TexCoords).rgb : material_color_diffuse);
         
         // diffuse 
         vec3 norm = normalize(Normal);
         float diff = max(dot(norm, lightDir), 0.0);
-        vec3 diffuse = light.diffuse * diff * texture(material_diffuse, TexCoords).rgb;  
+        vec3 diffuse = light.diffuse * diff * (hasDiffuseTexture ? texture(material_diffuse, TexCoords).rgb : material_color_diffuse);  
         
         // specular
         vec3 viewDir = normalize(viewPos - FragPos);
         vec3 reflectDir = reflect(-lightDir, norm);  
         float spec = pow(max(dot(viewDir, reflectDir), 0.0), material_shininess);
-        vec3 specular = light.specular * spec * texture(material_specular, TexCoords).rgb;  
+        vec3 specular = light.specular * spec * (hasDiffuseTexture ? texture(material_specular, TexCoords).rgb : material_color_diffuse);  
         
         // attenuation
         float distance    = length(light.position - FragPos);
@@ -179,7 +181,7 @@ vec4 CalcSpotLight( SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir )
             
         //vec3 result = ambient + diffuse + specular;
         //FragColor = vec4(result, 1.0);
-        vec4 result = vec4(ambient + diffuse + specular,texture(material_diffuse, TexCoords).a) ;
+        vec4 result = vec4(ambient + diffuse + specular, (hasDiffuseTexture ? texture(material_diffuse, TexCoords).a : 1.0)) ;
         if(result.a < 0.1)
             discard;
         FragColor = result;
@@ -189,7 +191,7 @@ vec4 CalcSpotLight( SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir )
     {
         // else, use ambient light so scene isn't completely dark outside the spotlight.
         //FragColor = vec4(light.ambient * texture(material_diffuse, TexCoords).rgb, 1.0);
-        vec4 result = vec4(light.ambient * texture(material_diffuse, TexCoords).rgb, texture(material_diffuse, TexCoords).a);
+        vec4 result = vec4(light.ambient * (hasDiffuseTexture ? texture(material_diffuse, TexCoords).rgb : material_color_diffuse), (hasDiffuseTexture ? texture(material_diffuse, TexCoords).a : 1.0));
         if(result.a < 0.1)
             discard;
         FragColor = result;
