@@ -56,7 +56,7 @@ GLFWmonitor* monitors;
 GLuint VBO[3], VAO[3], EBO[3];
 
 //Camera
-Camera camera(glm::vec3(0.0f, 10.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 10.0f, 100.0f));
 float MovementSpeed = 0.1f;
 GLfloat lastX = SCR_WIDTH / 2.0f,
 		lastY = SCR_HEIGHT / 2.0f;
@@ -77,7 +77,8 @@ unsigned int generateTextures(char*, bool, bool);	// De la pr�ctica 6
 float	movX = 0.0f,
 movY = 0.0f,
 movZ = -5.0f,
-rotX = 0.0f;
+rotX = 0.0f,
+giro = 0.0f;
 
 //Texture
 unsigned int	t_smile,
@@ -478,6 +479,14 @@ int main() {
 	Model caja("resources/objects/Caja/cajaTextura.obj");
 	Model mimikyu("resources/objects/Mimikyu/mimikyu.obj");
 	Model r2d2("resources/objects/R2D2/r2d2.obj");
+	Model aquaman("resources/objects/Aquaman/aquaman.obj");
+	Model aquaCuerpo("resources/objects/Aquaman/torso.obj");
+	Model aquaBrazoDerecho("resources/objects/Aquaman/brazoDer.obj");
+	Model aquaBrazoIzquierdo("resources/objects/Aquaman/brazoIzq.obj");
+	Model aquaPiernaDerecha("resources/objects/Aquaman/piernaDer.obj");
+	Model aquaPiernaIzquierda("resources/objects/Aquaman/piernaIzq.obj");
+	Model aquaCabeza("resources/objects/Aquaman/cabeza.obj");
+
 
 	ModelAnim animacionPersonaje("resources/objects/Personaje1/Arm.dae");
 	animacionPersonaje.initShaders(animShader.ID);
@@ -730,15 +739,39 @@ int main() {
 		staticShader.setMat4("model", modelOp);
 		llanta.Draw(staticShader);	//Izq trase
 		// -------------------------------------------------------------------------------------------------------------------------
-		// Personaje
+		// Personaje Aquaman
 		// -------------------------------------------------------------------------------------------------------------------------
 		
+		//modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+		//staticShader.setMat4("model", modelOp);
+		//aquaman.Draw(staticShader);
+
+		glm::mat4 tmp01;
 		
+		tmp01 = modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 0.0f, 50.0f));
+		staticShader.setMat4("model", modelOp);
+		aquaCuerpo.Draw(staticShader);
 		
+		modelOp = glm::translate(glm::mat4(tmp01), glm::vec3(0.0f, 0.0f, 0.0f));
+		staticShader.setMat4("model", modelOp);
+		aquaCabeza.Draw(staticShader);
 		
+		modelOp = glm::translate(glm::mat4(tmp01), glm::vec3(0.0f, 0.0f, 0.0f));
+		staticShader.setMat4("model", modelOp);
+		aquaBrazoDerecho.Draw(staticShader);
 		
+		modelOp = glm::translate(glm::mat4(tmp01), glm::vec3(0.0f, 0.0f, 0.0f));
+		modelOp = glm::rotate(modelOp, glm::radians(giro), glm::vec3(1.0f, 0.0f, 0.0f));
+		staticShader.setMat4("model", modelOp);
+		aquaBrazoIzquierdo.Draw(staticShader);
 		
+		modelOp = glm::translate(glm::mat4(tmp01), glm::vec3(0.0f, 0.0f, 0.0f));
+		staticShader.setMat4("model", modelOp);
+		aquaPiernaDerecha.Draw(staticShader);
 		
+		modelOp = glm::translate(glm::mat4(tmp01), glm::vec3(0.0f, 0.0f, 0.0f));
+		staticShader.setMat4("model", modelOp);
+		aquaPiernaIzquierda.Draw(staticShader);
 		
 		
 		
@@ -864,6 +897,10 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 		lightPosition.x++;
 	if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS)
 		lightPosition.x--;
+	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
+		giro++;
+	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
+		giro--;
 
 	//Car animation
 	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
