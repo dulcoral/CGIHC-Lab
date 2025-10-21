@@ -89,7 +89,7 @@ t_ladrillos;
 
 //Lighting
 glm::vec3 lightPosition(0.0f, 4.0f, -10.0f);
-glm::vec3 lightDirection(0.0f, -1.0f, -1.0f);
+glm::vec3 lightDirection(-1.0f, 0.0f, 0.0f);
 
 //// Light
 glm::vec3 lightColor = glm::vec3(0.7f);
@@ -228,6 +228,11 @@ void LoadTextures()
 
 void animate(void) 
 {
+    lightPosition.x = 70.0f * cos(my_angle);
+    lightPosition.z = 70.0f * sin(my_angle);
+
+    my_angle += 0.2f;
+
 	if (play)
 	{
 		if (i_curr_steps >= i_max_steps) //end of animation between frames?
@@ -447,7 +452,7 @@ int main() {
 	// build and compile shaders
 	// -------------------------
 	Shader myShader("shaders/shader_texture_color.vs", "shaders/shader_texture_color.fs"); //To use with primitives
-	Shader staticShader("Shaders/shader_Lights.vs", "Shaders/shader_Lights.fs");	//To use with static models
+	Shader staticShader("Shaders/shader_Lights.vs", "Shaders/shader_Lights_mod.fs");	//To use with static models
 	Shader skyboxShader("Shaders/skybox.vs", "Shaders/skybox.fs");	//To use with skybox
 	Shader animShader("Shaders/anim.vs", "Shaders/anim.fs");	//To use with animated models 
 	
@@ -533,26 +538,34 @@ int main() {
 		staticShader.use();
 		//Setup Advanced Lights
 		staticShader.setVec3("viewPos", camera.Position);
-		staticShader.setVec3("dirLight.direction", lightDirection);
-		staticShader.setVec3("dirLight.ambient", ambientColor);
-		staticShader.setVec3("dirLight.diffuse", diffuseColor);
+		staticShader.setVec3("dirLight.direction", glm::vec3(0.2f, 0.2f, 0.2f)); // Poligonos menos iluminados
+		staticShader.setVec3("dirLight.ambient", glm::vec3(0.0f, 0.0f, 0.0f));  // Poligonos mas iluminados
+		staticShader.setVec3("dirLight.diffuse", glm::vec3(0.0f, 0.0f, 0.0f)); // Brillo de los poligonos
 		staticShader.setVec3("dirLight.specular", glm::vec3(0.6f, 0.6f, 0.6f));
 
 		staticShader.setVec3("pointLight[0].position", lightPosition);
-		staticShader.setVec3("pointLight[0].ambient", glm::vec3(0.0f, 0.0f, 0.0f));
-		staticShader.setVec3("pointLight[0].diffuse", glm::vec3(0.0f, 0.0f, 0.0f));
+		staticShader.setVec3("pointLight[0].ambient", glm::vec3(0.4f, 0.4f, 0.4f));
+		staticShader.setVec3("pointLight[0].diffuse", glm::vec3(0.9f, 0.9f, 0.9f));
 		staticShader.setVec3("pointLight[0].specular", glm::vec3(0.0f, 0.0f, 0.0f));
 		staticShader.setFloat("pointLight[0].constant", 0.08f);
 		staticShader.setFloat("pointLight[0].linear", 0.009f);
-		staticShader.setFloat("pointLight[0].quadratic", 0.032f);
+		staticShader.setFloat("pointLight[0].quadratic", 0.00032f);
 
-		staticShader.setVec3("pointLight[1].position", glm::vec3(-80.0, 0.0f, 0.0f));
-		staticShader.setVec3("pointLight[1].ambient", glm::vec3(0.0f, 0.0f, 0.0f));
-		staticShader.setVec3("pointLight[1].diffuse", glm::vec3(0.0f, 0.0f, 0.0f));
+		staticShader.setVec3("pointLight[1].position", glm::vec3(-80.0, 20.0f, 0.0f));
+		staticShader.setVec3("pointLight[1].ambient", glm::vec3(0.0f, 0.4f, 0.0f));
+		staticShader.setVec3("pointLight[1].diffuse", glm::vec3(0.0f, 0.9f, 0.0f));
 		staticShader.setVec3("pointLight[1].specular", glm::vec3(0.0f, 0.0f, 0.0f));
 		staticShader.setFloat("pointLight[1].constant", 1.0f);
 		staticShader.setFloat("pointLight[1].linear", 0.009f);
 		staticShader.setFloat("pointLight[1].quadratic", 0.032f);
+
+        staticShader.setVec3("pointLight[2].position", glm::vec3(-80.0, 20.0f, 0.0f));
+		staticShader.setVec3("pointLight[2].ambient", glm::vec3(0.0f, 0.0f, 0.0f));
+		staticShader.setVec3("pointLight[2].diffuse", glm::vec3(0.0f, 0.0f, 0.0f));
+		staticShader.setVec3("pointLight[2].specular", glm::vec3(0.0f, 0.0f, 0.0f));
+		staticShader.setFloat("pointLight[2].constant", 1.0f);
+		staticShader.setFloat("pointLight[2].linear", 0.009f);
+		staticShader.setFloat("pointLight[2].quadratic", 0.032f);
 
 		staticShader.setVec3("spotLight[0].position", glm::vec3(0.0f, 20.0f, 10.0f));
 		staticShader.setVec3("spotLight[0].direction", glm::vec3(0.0f, -1.0f, 0.0f));
@@ -703,7 +716,7 @@ int main() {
 		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -70.0f));
 		modelOp = glm::scale(modelOp, glm::vec3(5.0f));
 		staticShader.setMat4("model", modelOp);
-		staticShader.setVec3("dirLight.specular", glm::vec3(0.0f, 0.0f, 0.0f));
+		staticShader.setVec3("dirLight.specular", glm::vec3(0.9f, 0.0f, 0.0f));
 		casaVieja.Draw(staticShader);
 
 		// -------------------------------------------------------------------------------------------------------------------------
@@ -713,7 +726,7 @@ int main() {
 		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(movAuto_x, -1.0f, movAuto_z - 15.0f));
 		tmp = modelOp = glm::rotate(modelOp, glm::radians(orienta), glm::vec3(0.0f, 1.0f, 0.0f));
 		modelOp = glm::scale(modelOp, glm::vec3(0.1f, 0.1f, 0.1f));
-		staticShader.setVec3("dirLight.specular", glm::vec3(0.6f, 0.6f, 0.6f));
+		staticShader.setVec3("dirLight.specular", glm::vec3(0.6f, 0.1f, 0.9f));
 		staticShader.setMat4("model", modelOp);
 		carro.Draw(staticShader);
 
@@ -894,9 +907,9 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS)
 		giroMonito++;
 	if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS)
-		lightPosition.x++;
+		lightPosition.y++;
 	if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS)
-		lightPosition.x--;
+		lightPosition.y--;
 	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
 		giro++;
 	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
