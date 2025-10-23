@@ -84,9 +84,10 @@ my_angle = 0.0f;
 // Light color animation
 std::vector<glm::vec3> lightColors;
 int colorIndex = 0;
+glm::vec3 currentLightColor = glm::vec3(1.0f, 1.0f, 1.0f); // Start with white
+
 float colorTimer = 0.0f;
 const float colorChangeInterval = 50.0f; // Change color every 50 frames/updates
-glm::vec3 currentLightColor = glm::vec3(1.0f, 1.0f, 1.0f); // Start with white
 
 //Texture
 unsigned int	t_smile,
@@ -242,15 +243,21 @@ void animate(void)
     my_angle += 0.01f;
 
 	// Light color animation
-	colorTimer += 1.0f;
+	colorTimer += 1.0f; // 1. Incrementa el temporizador en cada frame
+	
+	// 2. Comprueba si ha pasado el tiempo de intervalo
 	if (colorTimer >= colorChangeInterval)
 	{
+		// 3a. Reinicia el temporizador
 		colorTimer = 0.0f;
+		// 3b. Avanza al siguiente color (estado)
 		colorIndex++;
+		// 3c. Comprueba si el ciclo debe reiniciarse
 		if (colorIndex >= lightColors.size())
 		{
-			colorIndex = 0;
+			colorIndex = 0; // Vuelve al primer color (blanco)
 		}
+		// 3d. Actualiza el color que se debe renderizar
 		currentLightColor = lightColors[colorIndex];
 	}
 
