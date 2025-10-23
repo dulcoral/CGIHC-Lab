@@ -78,7 +78,15 @@ float	movX = 0.0f,
 movY = 0.0f,
 movZ = -5.0f,
 rotX = 0.0f,
-giro = 0.0f;
+giro = 0.0f,
+my_angle = 0.0f;
+
+// Light color animation
+std::vector<glm::vec3> lightColors;
+int colorIndex = 0;
+float colorTimer = 0.0f;
+const float colorChangeInterval = 50.0f; // Change color every 50 frames/updates
+glm::vec3 currentLightColor = glm::vec3(1.0f, 1.0f, 1.0f); // Start with white
 
 //Texture
 unsigned int	t_smile,
@@ -231,7 +239,20 @@ void animate(void)
     lightPosition.x = 70.0f * cos(my_angle);
     lightPosition.z = 70.0f * sin(my_angle);
 
-    my_angle += 0.2f;
+    my_angle += 0.01f;
+
+	// Light color animation
+	colorTimer += 1.0f;
+	if (colorTimer >= colorChangeInterval)
+	{
+		colorTimer = 0.0f;
+		colorIndex++;
+		if (colorIndex >= lightColors.size())
+		{
+			colorIndex = 0;
+		}
+		currentLightColor = lightColors[colorIndex];
+	}
 
 	if (play)
 	{
@@ -513,6 +534,14 @@ int main() {
 	glm::mat4 viewOp = glm::mat4(1.0f);		//Use this matrix for ALL models
 	glm::mat4 projectionOp = glm::mat4(1.0f);	//This matrix is for Projection
 
+	// Initialize light colors
+	lightColors.push_back(glm::vec3(1.0f, 1.0f, 1.0f)); // White
+	lightColors.push_back(glm::vec3(1.0f, 0.0f, 0.0f)); // Red
+	lightColors.push_back(glm::vec3(0.0f, 0.0f, 1.0f)); // Blue
+	lightColors.push_back(glm::vec3(0.0f, 1.0f, 0.0f)); // Green
+	lightColors.push_back(glm::vec3(1.0f, 1.0f, 0.0f)); // Yellow
+	lightColors.push_back(glm::vec3(1.0f, 0.5f, 0.0f)); // Orange
+
 	// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window))
@@ -544,8 +573,8 @@ int main() {
 		staticShader.setVec3("dirLight.specular", glm::vec3(0.6f, 0.6f, 0.6f));
 
 		staticShader.setVec3("pointLight[0].position", lightPosition);
-		staticShader.setVec3("pointLight[0].ambient", glm::vec3(0.4f, 0.4f, 0.4f));
-		staticShader.setVec3("pointLight[0].diffuse", glm::vec3(0.9f, 0.9f, 0.9f));
+		staticShader.setVec3("pointLight[0].ambient", currentLightColor * 0.4f);
+		staticShader.setVec3("pointLight[0].diffuse", currentLightColor * 0.9f);
 		staticShader.setVec3("pointLight[0].specular", glm::vec3(0.0f, 0.0f, 0.0f));
 		staticShader.setFloat("pointLight[0].constant", 0.08f);
 		staticShader.setFloat("pointLight[0].linear", 0.009f);
