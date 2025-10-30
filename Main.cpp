@@ -237,10 +237,10 @@ void LoadTextures()
 
 void animate(void) 
 {
-    lightPosition.x = 70.0f * cos(my_angle);
+   /* lightPosition.x = 70.0f * cos(my_angle);
     lightPosition.z = 70.0f * sin(my_angle);
 
-    my_angle += 0.01f;
+    my_angle += 0.01f;*/
 
 	// Light color animation
 	colorTimer += 1.0f; // 1. Incrementa el temporizador en cada frame
@@ -524,6 +524,9 @@ int main() {
 	ModelAnim animacionPersonaje("resources/objects/Personaje1/Arm.dae");
 	animacionPersonaje.initShaders(animShader.ID);
 
+    ModelAnim caminaMichelle("resources/objects/Michelle/michelle-walking.dae");
+	caminaMichelle.initShaders(animShader.ID);
+
 
 	//Inicializaci�n de KeyFrames
 	for (int i = 0; i < MAX_FRAMES; i++)
@@ -574,9 +577,9 @@ int main() {
 		staticShader.use();
 		//Setup Advanced Lights
 		staticShader.setVec3("viewPos", camera.Position);
-		staticShader.setVec3("dirLight.direction", glm::vec3(0.2f, 0.2f, 0.2f)); // Poligonos menos iluminados
-		staticShader.setVec3("dirLight.ambient", glm::vec3(0.0f, 0.0f, 0.0f));  // Poligonos mas iluminados
-		staticShader.setVec3("dirLight.diffuse", glm::vec3(0.0f, 0.0f, 0.0f)); // Brillo de los poligonos
+		staticShader.setVec3("dirLight.direction", glm::vec3(0.1f, 0.1f, 0.1f)); // Poligonos menos iluminados
+		staticShader.setVec3("dirLight.ambient", glm::vec3(0.1f, 0.1f, 0.1f));  // Poligonos mas iluminados
+		staticShader.setVec3("dirLight.diffuse", glm::vec3(0.1f, 0.1f, 0.1f)); // Brillo de los poligonos
 		staticShader.setVec3("dirLight.specular", glm::vec3(0.6f, 0.6f, 0.6f));
 
 		staticShader.setVec3("pointLight[0].position", lightPosition);
@@ -588,8 +591,8 @@ int main() {
 		staticShader.setFloat("pointLight[0].quadratic", 0.00032f);
 
 		staticShader.setVec3("pointLight[1].position", glm::vec3(-80.0, 20.0f, 0.0f));
-		staticShader.setVec3("pointLight[1].ambient", glm::vec3(0.0f, 0.4f, 0.0f));
-		staticShader.setVec3("pointLight[1].diffuse", glm::vec3(0.0f, 0.9f, 0.0f));
+		staticShader.setVec3("pointLight[1].ambient", glm::vec3(0.0f, 0.0f, 0.0f));
+		staticShader.setVec3("pointLight[1].diffuse", glm::vec3(0.0f, 0.0f, 0.0f));
 		staticShader.setVec3("pointLight[1].specular", glm::vec3(0.0f, 0.0f, 0.0f));
 		staticShader.setFloat("pointLight[1].constant", 1.0f);
 		staticShader.setFloat("pointLight[1].linear", 0.009f);
@@ -603,13 +606,13 @@ int main() {
 		staticShader.setFloat("pointLight[2].linear", 0.009f);
 		staticShader.setFloat("pointLight[2].quadratic", 0.032f);
 
-		staticShader.setVec3("spotLight[0].position", glm::vec3(0.0f, 20.0f, 10.0f));
-		staticShader.setVec3("spotLight[0].direction", glm::vec3(0.0f, -1.0f, 0.0f));
-		staticShader.setVec3("spotLight[0].ambient", glm::vec3(0.0f, 0.0f, 0.0f));
-		staticShader.setVec3("spotLight[0].diffuse", glm::vec3(0.0f, 0.0f, 0.0f));
+		staticShader.setVec3("spotLight[0].position", glm::vec3(camera.Position.x, camera.Position.y, camera.Position.z));
+		staticShader.setVec3("spotLight[0].direction", glm::vec3(camera.Front.x, camera.Front.y, camera.Front.z));
+		staticShader.setVec3("spotLight[0].ambient", glm::vec3(0.2f, 0.2f, 0.2f));
+		staticShader.setVec3("spotLight[0].diffuse", glm::vec3(0.9f, 0.9f, 0.9f));
 		staticShader.setVec3("spotLight[0].specular", glm::vec3(0.0f, 0.0f, 0.0f));
 		staticShader.setFloat("spotLight[0].cutOff", glm::cos(glm::radians(10.0f)));
-		staticShader.setFloat("spotLight[0].outerCutOff", glm::cos(glm::radians(60.0f)));
+		staticShader.setFloat("spotLight[0].outerCutOff", glm::cos(glm::radians(15.0f)));
 		staticShader.setFloat("spotLight[0].constant", 1.0f);
 		staticShader.setFloat("spotLight[0].linear", 0.0009f);
 		staticShader.setFloat("spotLight[0].quadratic", 0.0005f);
@@ -663,6 +666,11 @@ int main() {
 		// -------------------------------------------------------------------------------------------------------------------------
 		// Segundo Personaje Animacion
 		// -------------------------------------------------------------------------------------------------------------------------
+         
+        modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(90.0f, 0.0f, 30.0f));
+        modelOp = glm::scale(modelOp, glm::vec3(0.1f));
+        animShader.setMat4("model", modelOp);
+        caminaMichelle.Draw(animShader);
 
 
 
