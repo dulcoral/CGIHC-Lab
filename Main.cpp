@@ -81,14 +81,6 @@ rotX = 0.0f,
 giro = 0.0f,
 my_angle = 0.0f;
 
-// Light color animation
-std::vector<glm::vec3> lightColors;
-int colorIndex = 0;
-glm::vec3 currentLightColor = glm::vec3(1.0f, 1.0f, 1.0f); // Start with white
-
-float colorTimer = 0.0f;
-const float colorChangeInterval = 50.0f; // Change color every 50 frames/updates
-
 //Texture
 unsigned int	t_smile,
 t_toalla,
@@ -242,25 +234,6 @@ void animate(void)
 
     my_angle += 0.01f;*/
 
-	// Light color animation
-	colorTimer += 1.0f; // 1. Incrementa el temporizador en cada frame
-	
-	// 2. Comprueba si ha pasado el tiempo de intervalo
-	if (colorTimer >= colorChangeInterval)
-	{
-		// 3a. Reinicia el temporizador
-		colorTimer = 0.0f;
-		// 3b. Avanza al siguiente color (estado)
-		colorIndex++;
-		// 3c. Comprueba si el ciclo debe reiniciarse
-		if (colorIndex >= lightColors.size())
-		{
-			colorIndex = 0; // Vuelve al primer color (blanco)
-		}
-		// 3d. Actualiza el color que se debe renderizar
-		currentLightColor = lightColors[colorIndex];
-	}
-
 	if (play)
 	{
 		if (i_curr_steps >= i_max_steps) //end of animation between frames?
@@ -320,7 +293,7 @@ void myData() {
 		1, 2, 3  // second triangle
 	};
 
-	float verticesPiso[] = {
+	/*float verticesPiso[] = {
 		// positions          // texture coords
 		 10.5f,  10.5f, 0.0f,   4.0f, 4.0f, // top right
 		 10.5f, -10.5f, 0.0f,   4.0f, 0.0f, // bottom right
@@ -330,7 +303,7 @@ void myData() {
 	unsigned int indicesPiso[] = {
 		0, 1, 3, // first triangle
 		1, 2, 3  // second triangle
-	};
+	};*/
 
 	GLfloat verticesCubo[] = {
 		//Position				//texture coords
@@ -396,7 +369,7 @@ void myData() {
 	glEnableVertexAttribArray(1);
 
 	//Para Piso
-	glBindVertexArray(VAO[2]);
+	/*glBindVertexArray(VAO[2]);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO[2]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(verticesPiso), verticesPiso, GL_STATIC_DRAW);
 
@@ -408,7 +381,7 @@ void myData() {
 	glEnableVertexAttribArray(0);
 	// texture coord attribute
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(1);*/
 
 
 	//PARA CUBO
@@ -484,7 +457,7 @@ int main() {
 	Shader skyboxShader("Shaders/skybox.vs", "Shaders/skybox.fs");	//To use with skybox
 	Shader animShader("Shaders/anim.vs", "Shaders/anim.fs");	//To use with animated models 
 	
-	vector<std::string> faces{
+	/*vector<std::string> faces{
 		"resources/skybox/right.jpg",
 		"resources/skybox/left.jpg",
 		"resources/skybox/top.jpg",
@@ -493,39 +466,39 @@ int main() {
 		"resources/skybox/back.jpg"
 	};
 
-	Skybox skybox = Skybox(faces);
+	Skybox skybox = Skybox(faces);*/
 
 	// Shader configuration
 	// --------------------
-	skyboxShader.use();
-	skyboxShader.setInt("skybox", 0);
+	/*skyboxShader.use();
+	skyboxShader.setInt("skybox", 0);*/
 
 	// load models
 	// -----------
-	Model piso("resources/objects/piso/piso.obj");
-	Model carro("resources/objects/lambo/carroceria.obj");
-	Model llanta("resources/objects/lambo/Wheel.obj");
-	Model casaVieja("resources/objects/casa/OldHouse.obj");
-	//Model cubo("resources/objects/cubo/cube02.obj");
-	Model casaDoll("resources/objects/Casa/DollHouse.obj");
-	Model casaBruja("resources/objects/CasaBrujas/brujas.obj");
-	Model caja("resources/objects/Caja/cajaTextura.obj");
-	Model mimikyu("resources/objects/Mimikyu/mimikyu.obj");
-	Model r2d2("resources/objects/R2D2/r2d2.obj");
-	Model aquaman("resources/objects/Aquaman/aquaman.obj");
-	Model aquaCuerpo("resources/objects/Aquaman/torso.obj");
-	Model aquaBrazoDerecho("resources/objects/Aquaman/brazoDer.obj");
-	Model aquaBrazoIzquierdo("resources/objects/Aquaman/brazoIzq.obj");
-	Model aquaPiernaDerecha("resources/objects/Aquaman/piernaDer.obj");
-	Model aquaPiernaIzquierda("resources/objects/Aquaman/piernaIzq.obj");
-	Model aquaCabeza("resources/objects/Aquaman/cabeza.obj");
+	//Model piso("resources/objects/piso/piso.obj");
+	// Model carro("resources/objects/lambo/carroceria.obj");
+	// Model llanta("resources/objects/lambo/Wheel.obj");
+	// Model casaVieja("resources/objects/casa/OldHouse.obj");
+	// //Model cubo("resources/objects/cubo/cube02.obj");
+	// Model casaDoll("resources/objects/Casa/DollHouse.obj");
+	// Model casaBruja("resources/objects/CasaBrujas/brujas.obj");
+	// Model caja("resources/objects/Caja/cajaTextura.obj");
+	// Model r2d2("resources/objects/R2D2/r2d2.obj");
+	// Model aquaman("resources/objects/Aquaman/aquaman.obj");
+	// Model aquaCuerpo("resources/objects/Aquaman/torso.obj");
+	// Model aquaBrazoDerecho("resources/objects/Aquaman/brazoDer.obj");
+	// Model aquaBrazoIzquierdo("resources/objects/Aquaman/brazoIzq.obj");
+	// Model aquaPiernaDerecha("resources/objects/Aquaman/piernaDer.obj");
+	// Model aquaPiernaIzquierda("resources/objects/Aquaman/piernaIzq.obj");
+	// Model aquaCabeza("resources/objects/Aquaman/cabeza.obj");
+	Model escenario("resources/objects/Escenario/escenario.obj");
 
 
-	ModelAnim animacionPersonaje("resources/objects/Personaje1/Arm.dae");
+    ModelAnim animacionPersonaje("resources/objects/Joe/joe.fbx");
 	animacionPersonaje.initShaders(animShader.ID);
 
-    ModelAnim caminaMichelle("resources/objects/Michelle/michelle-walking.dae");
-	caminaMichelle.initShaders(animShader.ID);
+    // ModelAnim caminaMichelle("resources/objects/Michelle/michelle-walking.dae");
+	// caminaMichelle.initShaders(animShader.ID);
 
 
 	//Inicializaci�n de KeyFrames
@@ -544,19 +517,11 @@ int main() {
 	glm::mat4 viewOp = glm::mat4(1.0f);		//Use this matrix for ALL models
 	glm::mat4 projectionOp = glm::mat4(1.0f);	//This matrix is for Projection
 
-	// Initialize light colors
-	lightColors.push_back(glm::vec3(1.0f, 1.0f, 1.0f)); // White
-	lightColors.push_back(glm::vec3(1.0f, 0.0f, 0.0f)); // Red
-	lightColors.push_back(glm::vec3(0.0f, 0.0f, 1.0f)); // Blue
-	lightColors.push_back(glm::vec3(0.0f, 1.0f, 0.0f)); // Green
-	lightColors.push_back(glm::vec3(1.0f, 1.0f, 0.0f)); // Yellow
-	lightColors.push_back(glm::vec3(1.0f, 0.5f, 0.0f)); // Orange
-
 	// render loop
 	// -----------
 	while (!glfwWindowShouldClose(window))
 	{
-		skyboxShader.setInt("skybox", 0);
+		//skyboxShader.setInt("skybox", 0);
 
 		// per-frame time logic
 		// --------------------
@@ -577,14 +542,14 @@ int main() {
 		staticShader.use();
 		//Setup Advanced Lights
 		staticShader.setVec3("viewPos", camera.Position);
-		staticShader.setVec3("dirLight.direction", glm::vec3(0.1f, 0.1f, 0.1f)); // Poligonos menos iluminados
-		staticShader.setVec3("dirLight.ambient", glm::vec3(0.1f, 0.1f, 0.1f));  // Poligonos mas iluminados
-		staticShader.setVec3("dirLight.diffuse", glm::vec3(0.1f, 0.1f, 0.1f)); // Brillo de los poligonos
-		staticShader.setVec3("dirLight.specular", glm::vec3(0.6f, 0.6f, 0.6f));
+		staticShader.setVec3("dirLight.direction", glm::vec3(0.0f, -1.0f, -1.0f));
+		staticShader.setVec3("dirLight.ambient", glm::vec3(0.8f, 0.7f, 0.6f));
+		staticShader.setVec3("dirLight.diffuse", glm::vec3(0.0f, 0.0f, 0.0f));
+		staticShader.setVec3("dirLight.specular", glm::vec3(0.0f, 0.0f, 0.0f));
 
 		staticShader.setVec3("pointLight[0].position", lightPosition);
-		staticShader.setVec3("pointLight[0].ambient", currentLightColor * 0.4f);
-		staticShader.setVec3("pointLight[0].diffuse", currentLightColor * 0.9f);
+		staticShader.setVec3("pointLight[0].ambient", glm::vec3(0.0f, 0.0f, 0.0f));
+		staticShader.setVec3("pointLight[0].diffuse", glm::vec3(0.0f, 0.0f, 0.0f));
 		staticShader.setVec3("pointLight[0].specular", glm::vec3(0.0f, 0.0f, 0.0f));
 		staticShader.setFloat("pointLight[0].constant", 0.08f);
 		staticShader.setFloat("pointLight[0].linear", 0.009f);
@@ -608,9 +573,9 @@ int main() {
 
 		staticShader.setVec3("spotLight[0].position", glm::vec3(camera.Position.x, camera.Position.y, camera.Position.z));
 		staticShader.setVec3("spotLight[0].direction", glm::vec3(camera.Front.x, camera.Front.y, camera.Front.z));
-		staticShader.setVec3("spotLight[0].ambient", glm::vec3(0.2f, 0.2f, 0.2f));
-		staticShader.setVec3("spotLight[0].diffuse", glm::vec3(0.9f, 0.9f, 0.9f));
-		staticShader.setVec3("spotLight[0].specular", glm::vec3(0.0f, 0.0f, 0.0f));
+		staticShader.setVec3("spotLight[0].ambient", glm::vec3(0.1f, 0.1f, 0.1f));
+		staticShader.setVec3("spotLight[0].diffuse", glm::vec3(1.0f, 1.0f, 1.0f));
+		staticShader.setVec3("spotLight[0].specular", glm::vec3(1.0f, 1.0f, 1.0f));
 		staticShader.setFloat("spotLight[0].cutOff", glm::cos(glm::radians(10.0f)));
 		staticShader.setFloat("spotLight[0].outerCutOff", glm::cos(glm::radians(15.0f)));
 		staticShader.setFloat("spotLight[0].constant", 1.0f);
@@ -657,32 +622,31 @@ int main() {
 		animShader.setVec3("light.direction", lightDirection);
 		animShader.setVec3("viewPos", camera.Position);
 
-		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(-40.3f, 1.75f, 0.3f)); // translate it down so it's at the center of the scene
-		modelOp = glm::scale(modelOp, glm::vec3(0.05f));	// it's a bit too big for our scene, so scale it down
-		modelOp = glm::rotate(modelOp, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 0.0f, 50.0f));
+		modelOp = glm::scale(modelOp, glm::vec3(0.2f));	
 		animShader.setMat4("model", modelOp);
 		animacionPersonaje.Draw(animShader);
 
 		// -------------------------------------------------------------------------------------------------------------------------
 		// Segundo Personaje Animacion
 		// -------------------------------------------------------------------------------------------------------------------------
-         
-        modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(90.0f, 0.0f, 30.0f));
-        modelOp = glm::scale(modelOp, glm::vec3(0.1f));
-        animShader.setMat4("model", modelOp);
-        caminaMichelle.Draw(animShader);
-
+         /*
+         modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(90.0f, 0.0f, 30.0f));
+         modelOp = glm::scale(modelOp, glm::vec3(0.1f));
+         animShader.setMat4("model", modelOp);
+         caminaMichelle.Draw(animShader);
+		 */
 
 
 
 		// -------------------------------------------------------------------------------------------------------------------------
 		// Escenario Primitivas
 		// -------------------------------------------------------------------------------------------------------------------------
-		myShader.use();
+		/*myShader.use();
 
 		//Tener Piso como referencia
 		glBindVertexArray(VAO[2]);
-		//Colocar c�digo aqu�
+		//Colocar cdigo aqu
 		modelOp = glm::scale(glm::mat4(1.0f), glm::vec3(40.0f, 2.0f, 40.0f));
 		modelOp = glm::translate(modelOp, glm::vec3(0.0f, -1.0f, 0.0f));
 		modelOp = glm::rotate(modelOp, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -692,7 +656,7 @@ int main() {
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		glBindVertexArray(VAO[0]);
-		//Colocar c�digo aqu�
+		//Colocar cdigo aqu
 		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 0.0f));
 		modelOp = glm::scale(modelOp, glm::vec3(5.0f, 5.0f, 1.0f));
 		myShader.setMat4("model", modelOp);
@@ -701,8 +665,7 @@ int main() {
 		//glDrawArrays(GL_TRIANGLES, 0, 36); //A lonely cube :(
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-		/***   Segundo objeto  **/
-		/*
+		//   Segundo objeto
 		glBindVertexArray(VAO[1]);
 		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(3.0f, 0.0f, 0.0f));
 		myShader.setMat4("model", modelOp);
@@ -710,8 +673,9 @@ int main() {
 		glBindTexture(GL_TEXTURE_2D, t_unam);
 		glDrawArrays(GL_TRIANGLES, 0, 36); //A lonely cube :(
 		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		*/
+		
 		glBindVertexArray(0);
+		*/
 		// ------------------------------------------------------------------------------------------------------------------------
 		// Termina Escenario Primitivas
 		// -------------------------------------------------------------------------------------------------------------------------
@@ -723,34 +687,33 @@ int main() {
 		staticShader.setMat4("projection", projectionOp);
 		staticShader.setMat4("view", viewOp);
 
-		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(50.0f, 0.0f, 10.0f));
-		modelOp = glm::rotate(modelOp, glm::radians(-180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		modelOp = glm::scale(modelOp, glm::vec3(5.0f));
+		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.75f, 0.0f));
+		modelOp = glm::scale(modelOp, glm::vec3(10.0f)); 
 		staticShader.setMat4("model", modelOp);
-		mimikyu.Draw(staticShader);
+		escenario.Draw(staticShader);
 
-		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(100.0f, 0.0f, -50.0f));
+		/*modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(100.0f, 0.0f, -50.0f));
 		modelOp = glm::rotate(modelOp, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		modelOp = glm::scale(modelOp, glm::vec3(5.0f));
 		staticShader.setMat4("model", modelOp);
-		r2d2.Draw(staticShader);
+		//r2d2.Draw(staticShader);
 
 		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(250.0f, 0.0f, 130.0f));
 		modelOp = glm::rotate(modelOp, glm::radians(-180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		modelOp = glm::scale(modelOp, glm::vec3(5.0f));
 		staticShader.setMat4("model", modelOp);
-		casaBruja.Draw(staticShader);
+		//casaBruja.Draw(staticShader);
 
 		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(100.0f, 0.0f, -10.0f));
 		modelOp = glm::rotate(modelOp, glm::radians(-180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		modelOp = glm::scale(modelOp, glm::vec3(5.0f));
 		staticShader.setMat4("model", modelOp);
-		caja.Draw(staticShader);
+		//caja.Draw(staticShader);
 
 		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(250.0f, 0.0f, -10.0f));
 		modelOp = glm::rotate(modelOp, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		staticShader.setMat4("model", modelOp);
-		casaDoll.Draw(staticShader);
+		//casaDoll.Draw(staticShader);
 
 		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.75f, 0.0f));
 		modelOp = glm::scale(modelOp, glm::vec3(0.2f));
@@ -760,45 +723,46 @@ int main() {
 		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -70.0f));
 		modelOp = glm::scale(modelOp, glm::vec3(5.0f));
 		staticShader.setMat4("model", modelOp);
-		staticShader.setVec3("dirLight.specular", glm::vec3(0.9f, 0.0f, 0.0f));
-		casaVieja.Draw(staticShader);
-
+		//casaVieja.Draw(staticShader);
+		*/
 		// -------------------------------------------------------------------------------------------------------------------------
 		// Carro
 		// -------------------------------------------------------------------------------------------------------------------------
+		/*
 		//modelOp = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(movAuto_x, -1.0f, movAuto_z - 15.0f));
 		tmp = modelOp = glm::rotate(modelOp, glm::radians(orienta), glm::vec3(0.0f, 1.0f, 0.0f));
 		modelOp = glm::scale(modelOp, glm::vec3(0.1f, 0.1f, 0.1f));
 		staticShader.setVec3("dirLight.specular", glm::vec3(0.6f, 0.1f, 0.9f));
 		staticShader.setMat4("model", modelOp);
-		carro.Draw(staticShader);
+		//carro.Draw(staticShader);
 
 		modelOp = glm::translate(tmp, glm::vec3(8.5f, 2.5f, 12.9f));
 		modelOp = glm::scale(modelOp, glm::vec3(0.1f, 0.1f, 0.1f));
 		staticShader.setMat4("model", modelOp);
-		llanta.Draw(staticShader);	//Izq delantera
+		//llanta.Draw(staticShader);	//Izq delantera
 
 		modelOp = glm::translate(tmp, glm::vec3(-8.5f, 2.5f, 12.9f));
 		modelOp = glm::scale(modelOp, glm::vec3(0.1f, 0.1f, 0.1f));
 		modelOp = glm::rotate(modelOp, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		staticShader.setMat4("model", modelOp);
-		llanta.Draw(staticShader);	//Der delantera
+		//llanta.Draw(staticShader);	//Der delantera
 
 		modelOp = glm::translate(tmp, glm::vec3(-8.5f, 2.5f, -14.5f));
 		modelOp = glm::scale(modelOp, glm::vec3(0.1f, 0.1f, 0.1f));
 		modelOp = glm::rotate(modelOp, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		staticShader.setMat4("model", modelOp);
-		llanta.Draw(staticShader);	//Der trasera
+		//llanta.Draw(staticShader);	//Der trasera
 
 		modelOp = glm::translate(tmp, glm::vec3(8.5f, 2.5f, -14.5f));
 		modelOp = glm::scale(modelOp, glm::vec3(0.1f, 0.1f, 0.1f));
 		staticShader.setMat4("model", modelOp);
-		llanta.Draw(staticShader);	//Izq trase
+		//llanta.Draw(staticShader);	//Izq trase
+		*/
 		// -------------------------------------------------------------------------------------------------------------------------
 		// Personaje Aquaman
 		// -------------------------------------------------------------------------------------------------------------------------
-		
+		/*
 		//modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 		//staticShader.setMat4("model", modelOp);
 		//aquaman.Draw(staticShader);
@@ -829,6 +793,7 @@ int main() {
 		modelOp = glm::translate(glm::mat4(tmp01), glm::vec3(0.0f, 0.0f, 0.0f));
 		staticShader.setMat4("model", modelOp);
 		aquaPiernaIzquierda.Draw(staticShader);
+		*/
 		
 		
 		
@@ -892,8 +857,8 @@ int main() {
 		//-------------------------------------------------------------------------------------
 		// draw skybox as last
 		// -------------------
-		skyboxShader.use();
-		skybox.Draw(skyboxShader, viewOp, projectionOp, camera);
+		/*skyboxShader.use();
+		skybox.Draw(skyboxShader, viewOp, projectionOp, camera);*/
 
 		// Limitar el framerate a 60
 		deltaTime = SDL_GetTicks() - lastFrame; // time for full 1 loop

@@ -236,6 +236,10 @@ private:
 
         // 1. diffuse maps
         vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+        if (diffuseMaps.empty()) {
+            vector<Texture> baseColorMaps = loadMaterialTextures(material, aiTextureType_BASE_COLOR, "texture_diffuse");
+            diffuseMaps.insert(diffuseMaps.end(), baseColorMaps.begin(), baseColorMaps.end());
+        }
         textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
         // 2. specular maps
         vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
@@ -298,11 +302,23 @@ private:
         {
             aiString str;
             mat->GetTexture(type, i, &str);
+            // Normalizar ruta: backslashes a '/', quitar '@' inicial (Mixamo/FBX), usar basename
+            std::string texPath = str.C_Str();
+            for (char &c : texPath) if (c == '\\') c = '/';
+            if (!texPath.empty() && texPath[0] == '@') {
+                texPath = texPath.substr(1);
+            }
+            if (!texPath.empty() && texPath[0] != '*') {
+                size_t pos = texPath.find_last_of('/');
+                if (pos != std::string::npos) {
+                    texPath = texPath.substr(pos + 1);
+                }
+            }
             // check if texture was loaded before and if so, continue to next iteration: skip loading a new texture
             bool skip = false;
             for(unsigned int j = 0; j < textures_loaded.size(); j++)
             {
-                if(std::strcmp(textures_loaded[j].path.data(), str.C_Str()) == 0)
+                if(std::strcmp(textures_loaded[j].path.data(), texPath.c_str()) == 0)
                 {
                     textures.push_back(textures_loaded[j]);
                     skip = true; // a texture with the same filepath has already been loaded, continue to next one. (optimization)
@@ -312,9 +328,9 @@ private:
             if(!skip)
             {   // if texture hasn't been loaded already, load it
                 Texture texture;
-				texture.id = TextureFromFile(str.C_Str(), this->directory);
+                texture.id = TextureFromFile(texPath.c_str(), this->directory);
                 texture.type = typeName;
-                texture.path = str.C_Str();
+                texture.path = texPath;
                 textures.push_back(texture);
                 textures_loaded.push_back(texture);  // store it as texture loaded for entire model, to ensure we won't unnecesery load duplicate textures.
             }
@@ -322,48 +338,40 @@ private:
         return textures;
     }
 
-	uint findPosition(float p_animation_time, const aiNodeAnim* p_node_anim)
+    uint findPosition(float p_animation_time, const aiNodeAnim* p_node_anim)
 	{
-		// ����� ���� ������� ����� ����� ����� ������� ���������� ����� ������ ��������
-		for (uint i = 0; i < p_node_anim->mNumPositionKeys - 1; i++) // �������� ����� ��������
-		{
-			if (p_animation_time < (float)p_node_anim->mPositionKeys[i + 1].mTime) // �������� �� �������� ��������� !!!
-			{
-				return i; // �� ������� ������ �������� !!!!!!!!!!!!!!!!!! ����������������������������
-			}
-		}
-
-		assert(0);
-		return 0;
+        for (uint i = 0; i < p_node_anim->mNumPositionKeys - 1; i++)
+        {
+            if (p_animation_time < (float)p_node_anim->mPositionKeys[i + 1].mTime)
+            {
+                return i;
+            }
+        }
+        return p_node_anim->mNumPositionKeys - 1;
 	}
 
-	uint findRotation(float p_animation_time, const aiNodeAnim* p_node_anim)
+    uint findRotation(float p_animation_time, const aiNodeAnim* p_node_anim)
 	{
-		// ����� ���� ������� ����� ����� ����� ������� ���������� ����� ������ ��������
-		for (uint i = 0; i < p_node_anim->mNumRotationKeys - 1; i++) // �������� ����� ��������
-		{
-			if (p_animation_time < (float)p_node_anim->mRotationKeys[i + 1].mTime) // �������� �� �������� ��������� !!!
-			{
-				return i; // �� ������� ������ �������� !!!!!!!!!!!!!!!!!! ����������������������������
-			}
-		}
-		// Si no se encuentra una clave en el bucle, devuelve la última clave de rotación.
-		return p_node_anim->mNumRotationKeys - 1;
+        for (uint i = 0; i < p_node_anim->mNumRotationKeys - 1; i++)
+        {
+            if (p_animation_time < (float)p_node_anim->mRotationKeys[i + 1].mTime)
+            {
+                return i;
+            }
+        }
+        return p_node_anim->mNumRotationKeys - 1;
 	}
 
-	uint findScaling(float p_animation_time, const aiNodeAnim* p_node_anim)
+    uint findScaling(float p_animation_time, const aiNodeAnim* p_node_anim)
 	{
-		// ����� ���� ������� ����� ����� ����� ������� ���������� ����� ������ ��������
-		for (uint i = 0; i < p_node_anim->mNumScalingKeys - 1; i++) // �������� ����� ��������
-		{
-			if (p_animation_time < (float)p_node_anim->mScalingKeys[i + 1].mTime) // �������� �� �������� ��������� !!!
-			{
-				return i; // �� ������� ������ �������� !!!!!!!!!!!!!!!!!! ����������������������������
-			}
-		}
-
-		assert(0);
-		return 0;
+        for (uint i = 0; i < p_node_anim->mNumScalingKeys - 1; i++)
+        {
+            if (p_animation_time < (float)p_node_anim->mScalingKeys[i + 1].mTime)
+            {
+                return i;
+            }
+        }
+        return p_node_anim->mNumScalingKeys - 1;
 	}
 
 	aiVector3D calcInterpolatedPosition(float p_animation_time, const aiNodeAnim* p_node_anim)
@@ -373,14 +381,29 @@ private:
 			return p_node_anim->mPositionKeys[0].mValue;
 		}
 
-		uint position_index = findPosition(p_animation_time, p_node_anim); // ������ ������ �������� ����� ������� ������
-		uint next_position_index = position_index + 1; // ������ ��������� �������� �����
-		assert(next_position_index < p_node_anim->mNumPositionKeys);
-		// ���� ����� �������
-		float delta_time = (float)(p_node_anim->mPositionKeys[next_position_index].mTime - p_node_anim->mPositionKeys[position_index].mTime);
-		// ������ = (���� ������� ������ �� ������ �������� ��������� �����) / �� ���� ����� �������
-		float factor = (p_animation_time - (float)p_node_anim->mPositionKeys[position_index].mTime) / delta_time;
-		assert(factor >= 0.0f && factor <= 1.0f);
+        uint position_index = findPosition(p_animation_time, p_node_anim);
+        uint next_position_index = position_index + 1;
+        if (next_position_index >= p_node_anim->mNumPositionKeys) {
+            next_position_index = 0;
+        }
+
+        float time_key1 = (float)p_node_anim->mPositionKeys[position_index].mTime;
+        float time_key2 = (float)p_node_anim->mPositionKeys[next_position_index].mTime;
+        float delta_time = time_key2 - time_key1;
+        if (delta_time < 0.0f) {
+            delta_time += (float)scene->mAnimations[0]->mDuration;
+        }
+
+        float factor = 0.0f;
+        if (delta_time > 0.0f) {
+            float time_since_key1 = p_animation_time - time_key1;
+            if (time_since_key1 < 0.0f) {
+                time_since_key1 += (float)scene->mAnimations[0]->mDuration;
+            }
+            factor = time_since_key1 / delta_time;
+        }
+        if (factor < 0.0f) factor = 0.0f;
+        if (factor > 1.0f) factor = 1.0f;
 		aiVector3D start = p_node_anim->mPositionKeys[position_index].mValue;
 		aiVector3D end = p_node_anim->mPositionKeys[next_position_index].mValue;
 		aiVector3D delta = end - start;
@@ -395,32 +418,28 @@ private:
 			return p_node_anim->mRotationKeys[0].mValue;
 		}
 
-		uint rotation_index = findRotation(p_animation_time, p_node_anim); // ������ ������ �������� ����� ������� ������
-		uint next_rotation_index = rotation_index + 1; // ������ ��������� �������� �����
+        uint rotation_index = findRotation(p_animation_time, p_node_anim);
+        uint next_rotation_index = rotation_index + 1;
+        if (next_rotation_index >= p_node_anim->mNumRotationKeys) {
+            next_rotation_index = 0;
+        }
 
-		if (next_rotation_index >= p_node_anim->mNumRotationKeys) {
-			// Si next_rotation_index está fuera de los límites, no hay una clave siguiente para interpolar.
-			// En este caso, simplemente usamos la clave actual y el factor será 0.0f o 1.0f dependiendo de la lógica.
-			// Para evitar errores y mantener la animación en la última pose, configuramos factor a 0.0f
-			next_rotation_index = rotation_index;
-		}
-
-		// ���� ����� �������
-		float delta_time = (float)(p_node_anim->mRotationKeys[next_rotation_index].mTime - p_node_anim->mRotationKeys[rotation_index].mTime);
-		// ������ = (���� ������� ������ �� ������ �������� ��������� �����) / �� ���� ����� �������
-
-		float factor;
-
-		if (delta_time == 0.0f) {
-			factor = 0.0f; // Evita división por cero, usa la clave actual sin interpolación
-		}
-		else {
-			factor = (p_animation_time - (float)p_node_anim->mRotationKeys[rotation_index].mTime) / delta_time;
-		}
-
-		// Asegurarse de que el factor esté dentro del rango [0.0f, 1.0f]
-		if (factor < 0.0f) factor = 0.0f;
-		if (factor > 1.0f) factor = 1.0f;
+        float time_key1 = (float)p_node_anim->mRotationKeys[rotation_index].mTime;
+        float time_key2 = (float)p_node_anim->mRotationKeys[next_rotation_index].mTime;
+        float delta_time = time_key2 - time_key1;
+        if (delta_time < 0.0f) {
+            delta_time += (float)scene->mAnimations[0]->mDuration;
+        }
+        float factor = 0.0f;
+        if (delta_time > 0.0f) {
+            float time_since_key1 = p_animation_time - time_key1;
+            if (time_since_key1 < 0.0f) {
+                time_since_key1 += (float)scene->mAnimations[0]->mDuration;
+            }
+            factor = time_since_key1 / delta_time;
+        }
+        if (factor < 0.0f) factor = 0.0f;
+        if (factor > 1.0f) factor = 1.0f;
 
 		//cout << "p_node_anim->mRotationKeys[rotation_index].mTime: " << p_node_anim->mRotationKeys[rotation_index].mTime << endl;
 		//cout << "p_node_anim->mRotationKeys[next_rotaion_index].mTime: " << p_node_anim->mRotationKeys[next_rotation_index].mTime << endl;
@@ -428,8 +447,6 @@ private:
 		//cout << "animation_time: " << p_animation_time << endl;
 		//cout << "animation_time - mRotationKeys[rotation_index].mTime: " << (p_animation_time - (float)p_node_anim->mRotationKeys[rotation_index].mTime) << endl;
 		//cout << "factor: " << factor << endl << endl << endl;
-
-		assert(factor >= 0.0f && factor <= 1.0f);
 		aiQuaternion start_quat = p_node_anim->mRotationKeys[rotation_index].mValue;
 		aiQuaternion end_quat = p_node_anim->mRotationKeys[next_rotation_index].mValue;
 
@@ -443,15 +460,27 @@ private:
 			return p_node_anim->mScalingKeys[0].mValue;
 		}
 
-		uint scaling_index = findScaling(p_animation_time, p_node_anim); // ������ ������ �������� ����� ������� ������
-		uint next_scaling_index = scaling_index + 1; // ������ ��������� �������� �����
-		assert(next_scaling_index < p_node_anim->mNumScalingKeys);
-		// ���� ����� �������
-		float delta_time = (float)(p_node_anim->mScalingKeys[next_scaling_index].mTime - p_node_anim->mScalingKeys[scaling_index].mTime);
-		// ������ = (���� ������� ������ �� ������ �������� ��������� �����) / �� ���� ����� �������
-		float  factor = (p_animation_time - (float)p_node_anim->mScalingKeys[scaling_index].mTime) / delta_time;
-		//cout << "p_animation_time: " << p_animation_time << " " << "mTime: " << (float)p_node_anim->mScalingKeys[scaling_index].mTime << endl << endl << endl;
-		assert(factor >= 0.0f && factor <= 1.0f);
+        uint scaling_index = findScaling(p_animation_time, p_node_anim);
+        uint next_scaling_index = scaling_index + 1;
+        if (next_scaling_index >= p_node_anim->mNumScalingKeys) {
+            next_scaling_index = 0;
+        }
+        float time_key1 = (float)p_node_anim->mScalingKeys[scaling_index].mTime;
+        float time_key2 = (float)p_node_anim->mScalingKeys[next_scaling_index].mTime;
+        float delta_time = time_key2 - time_key1;
+        if (delta_time < 0.0f) {
+            delta_time += (float)scene->mAnimations[0]->mDuration;
+        }
+        float factor = 0.0f;
+        if (delta_time > 0.0f) {
+            float time_since_key1 = p_animation_time - time_key1;
+            if (time_since_key1 < 0.0f) {
+                time_since_key1 += (float)scene->mAnimations[0]->mDuration;
+            }
+            factor = time_since_key1 / delta_time;
+        }
+        if (factor < 0.0f) factor = 0.0f;
+        if (factor > 1.0f) factor = 1.0f;
 		aiVector3D start = p_node_anim->mScalingKeys[scaling_index].mValue;
 		aiVector3D end = p_node_anim->mScalingKeys[next_scaling_index].mValue;
 		aiVector3D delta = end - start;
@@ -490,22 +519,26 @@ private:
 		if (node_anim)
 		{
 
-			//scaling
-			//aiVector3D scaling_vector = node_anim->mScalingKeys[2].mValue;
-			aiVector3D scaling_vector = calcInterpolatedScaling(p_animation_time, node_anim);
-			aiMatrix4x4 scaling_matr;
-			aiMatrix4x4::Scaling(scaling_vector, scaling_matr);
+            // scaling: identidad por defecto; si hay claves, usar interpolación
+            aiMatrix4x4 scaling_matr; // identidad
+            if (node_anim->mNumScalingKeys > 0) {
+                aiVector3D scaling_vector = calcInterpolatedScaling(p_animation_time, node_anim);
+                aiMatrix4x4::Scaling(scaling_vector, scaling_matr);
+            }
 
-			//rotation
-			//aiQuaternion rotate_quat = node_anim->mRotationKeys[2].mValue;
-			aiQuaternion rotate_quat = calcInterpolatedRotation(p_animation_time, node_anim);
-			aiMatrix4x4 rotate_matr = aiMatrix4x4(rotate_quat.GetMatrix());
+            // rotation: identidad si no hay claves
+            aiMatrix4x4 rotate_matr; // identidad
+            if (node_anim->mNumRotationKeys > 0) {
+                aiQuaternion rotate_quat = calcInterpolatedRotation(p_animation_time, node_anim);
+                rotate_matr = aiMatrix4x4(rotate_quat.GetMatrix());
+            }
 
-			//translation
-			//aiVector3D translate_vector = node_anim->mPositionKeys[2].mValue;
-			aiVector3D translate_vector = calcInterpolatedPosition(p_animation_time, node_anim);
-			aiMatrix4x4 translate_matr;
-			aiMatrix4x4::Translation(translate_vector, translate_matr);
+			// translation: si hay claves, usar; en otro caso, identidad
+			aiMatrix4x4 translate_matr; // identidad
+			if (node_anim->mNumPositionKeys > 0) {
+                aiVector3D translate_vector = calcInterpolatedPosition(p_animation_time, node_anim);
+                aiMatrix4x4::Translation(translate_vector, translate_matr);
+            }
 
 			//if (p_node->mName == scene->mRootNode->mName) {
 			//	node_transform = translate_matr * (rotate_matr * aiMatrix4x4 (aiQuaternion(-90.0f, 0.0f, 0.0f).GetMatrix())) * scaling_matr;
@@ -535,8 +568,12 @@ private:
 		aiMatrix4x4 identity_matrix; // = mat4(1.0f);
 
 		double time_in_ticks = time_in_sec * ticks_per_second;
-		float animation_time = fmod(time_in_ticks, scene->mAnimations[0]->mDuration); //������� �� ����� (������� �� ������)
-		// animation_time - ���� ������� ������ � ���� ������ �� ������ �������� (�� ������� �������� ����� � �������� )
+		float duration = (float)scene->mAnimations[0]->mDuration;
+		float animation_time = fmod(time_in_ticks, duration);
+		if (animation_time < 0.0f) animation_time += duration;
+		// Evitar el salto en el borde final del loop
+		const float epsilon = 1e-5f;
+		if (animation_time >= duration - epsilon) animation_time = duration - epsilon;
 
 		readNodeHierarchy(animation_time, scene->mRootNode, identity_matrix);
 
