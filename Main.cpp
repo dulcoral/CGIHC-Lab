@@ -105,18 +105,17 @@ glm::vec3 lightColor = glm::vec3(0.7f);
 glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);
 glm::vec3 ambientColor = diffuseColor * glm::vec3(0.75f);
 
-// posiciones
-float	movAuto_x = 0.0f,
-movAuto_z = 0.0f,
-orienta = 90.0f;
-bool	animacion = false,
-recorrido1 = true,
-recorrido2 = false,
-recorrido3 = false,
-recorrido4 = false;
+//Nuevas variables para la animación del carro
+bool animacion = false;
+int estadoRecorrido = 0;	//0: idle, 1: reversa, 2: arriba, 3: derecha, 4: abajo, 5: derecha, 6: finalizado
+float avance = 0.0f;
+float velocidad = 2.5f;
+glm::vec3 posicionInicialCarro = glm::vec3(0.0f, -1.0f, -15.0f);
+glm::vec3 posicionCarro = posicionInicialCarro;
+float orientacionCarro = 90.0f;
 
 
-//Keyframes (Manipulaci�n y dibujo)
+//Keyframes (Manipulación y dibujo)
 float	posX = 0.0f,
 		posY = 0.0f,
 		posZ = 0.0f,
@@ -294,10 +293,58 @@ void animate(void)
 		}
 	}
 
-	//Veh�culo
+	//Vehículo
 	if (animacion)
 	{
-		movAuto_x += 3.0f;
+		switch (estadoRecorrido)
+		{
+		case 1: // Reversa 200 unidades. El auto apunta a la derecha (+X), se mueve en -X.
+			orientacionCarro = 90.0f;
+			posicionCarro.x -= velocidad;
+			avance += velocidad;
+			if (avance >= 200.0f) {
+				avance = 0.0f;
+				estadoRecorrido = 2;
+			}
+			break;
+		case 2: // Mover "arriba" 200.5 unidades (-Z)
+			orientacionCarro = 180.0f; // Apunta hacia "arriba" (-Z)
+			posicionCarro.z -= velocidad;
+			avance += velocidad;
+			if (avance >= 200.5f) {
+				avance = 0.0f;
+				estadoRecorrido = 3;
+			}
+			break;
+		case 3: // Mover "derecha" 310.5 unidades (+X)
+			orientacionCarro = 90.0f; // Apunta a la derecha
+			posicionCarro.x += velocidad;
+			avance += velocidad;
+			if (avance >= 310.5f) {
+				avance = 0.0f;
+				estadoRecorrido = 4;
+			}
+			break;
+		case 4: // Mover "abajo" 200.5 unidades (+Z)
+			orientacionCarro = 0.0f; // Apunta hacia "abajo" (+Z)
+			posicionCarro.z += velocidad;
+			avance += velocidad;
+			if (avance >= 200.5f) {
+				avance = 0.0f;
+				estadoRecorrido = 5;
+			}
+			break;
+		case 5: // Mover "derecha" 150.0 unidades (+X)
+			orientacionCarro = 90.0f; // Apunta a la derecha
+			posicionCarro.x += velocidad;
+			avance += velocidad;
+			if (avance >= 150.0f) {
+				avance = 0.0f;
+				estadoRecorrido = 6; // Finalizado
+				animacion = false;
+			}
+			break;
+		}
 	}
 }
 
@@ -767,8 +814,8 @@ int main() {
 		// Carro
 		// -------------------------------------------------------------------------------------------------------------------------
 		//modelOp = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(movAuto_x, -1.0f, movAuto_z - 15.0f));
-		tmp = modelOp = glm::rotate(modelOp, glm::radians(orienta), glm::vec3(0.0f, 1.0f, 0.0f));
+		modelOp = glm::translate(glm::mat4(1.0f), posicionCarro);
+		tmp = modelOp = glm::rotate(modelOp, glm::radians(orientacionCarro), glm::vec3(0.0f, 1.0f, 0.0f));
 		modelOp = glm::scale(modelOp, glm::vec3(0.1f, 0.1f, 0.1f));
 		staticShader.setVec3("dirLight.specular", glm::vec3(0.6f, 0.1f, 0.9f));
 		staticShader.setMat4("model", modelOp);
@@ -961,7 +1008,26 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 
 	//Car animation
 	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-		animacion ^= true;
+	{
+		if (estadoRecorrido == 0 || estadoRecorrido == 6)
+		{
+			if (estadoRecorrido == 6) { // Si ha finalizado, reiniciar
+				posicionCarro = posicionInicialCarro;
+				orientacionCarro = 90.0f;
+			}
+			animacion = true;
+			estadoRecorrido = 1;
+		}
+	}
+
+	if (key == GLFW_KEY_R && action == GLFW_PRESS)
+	{
+		animacion = false;
+		estadoRecorrido = 0;
+		avance = 0.0f;
+		posicionCarro = posicionInicialCarro;
+		orientacionCarro = 90.0f;
+	}
 
 	//To play KeyFrame animation 
 	if (key == GLFW_KEY_P && action == GLFW_PRESS)
