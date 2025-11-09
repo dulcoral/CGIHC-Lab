@@ -1,5 +1,5 @@
 /*---------------------------------------------------------*/
-/* ----------------   Pr�ctica 4 --------------------------*/
+/* ----------------   Proyecto Final --------------------------*/
 /*-----------------    2026-1   ---------------------------*/
 /*------------- Alumno: Dulce Coral Rodriguez Garcia    ---------------*/
 /*------------- No. Cuenta 313144545     ---------------*/
@@ -41,6 +41,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void my_input(GLFWwindow* window, int key, int scancode, int action, int mods);
 void animate(void);
+void processInput(GLFWwindow* window);
 
 // GLFW error callback to diagnose initialization issues on macOS
 static void glfw_error_callback(int error, const char* description)
@@ -457,21 +458,21 @@ int main() {
 	Shader skyboxShader("Shaders/skybox.vs", "Shaders/skybox.fs");	//To use with skybox
 	Shader animShader("Shaders/anim.vs", "Shaders/anim.fs");	//To use with animated models 
 	
-	/*vector<std::string> faces{
-		"resources/skybox/right.jpg",
-		"resources/skybox/left.jpg",
-		"resources/skybox/top.jpg",
-		"resources/skybox/bottom.jpg",
-		"resources/skybox/front.jpg",
-		"resources/skybox/back.jpg"
+	vector<std::string> faces{
+		"resources/skybox/right.png",
+		"resources/skybox/left.png",
+		"resources/skybox/top.png",
+		"resources/skybox/bottom.png",
+		"resources/skybox/front.png",
+		"resources/skybox/back.png"
 	};
 
-	Skybox skybox = Skybox(faces);*/
+	Skybox skybox = Skybox(faces);
 
 	// Shader configuration
 	// --------------------
-	/*skyboxShader.use();
-	skyboxShader.setInt("skybox", 0);*/
+	skyboxShader.use();
+	skyboxShader.setInt("skybox", 0);
 
 	// load models
 	// -----------
@@ -491,8 +492,7 @@ int main() {
 	// Model aquaPiernaDerecha("resources/objects/Aquaman/piernaDer.obj");
 	// Model aquaPiernaIzquierda("resources/objects/Aquaman/piernaIzq.obj");
 	// Model aquaCabeza("resources/objects/Aquaman/cabeza.obj");
-	Model escenario("resources/objects/Escenario/escenario.obj");
-
+	Model escenario("resources/objects/Escenario/museoFinal.obj");
 
     ModelAnim animacionPersonaje("resources/objects/Joe/joe.fbx");
 	animacionPersonaje.initShaders(animShader.ID);
@@ -530,6 +530,7 @@ int main() {
 		// input
 		// -----
 		//my_input(window);
+		processInput(window);
 		animate();
 
 		// render
@@ -543,14 +544,14 @@ int main() {
 		//Setup Advanced Lights
 		staticShader.setVec3("viewPos", camera.Position);
 		staticShader.setVec3("dirLight.direction", glm::vec3(0.0f, -1.0f, -1.0f));
-		staticShader.setVec3("dirLight.ambient", glm::vec3(0.8f, 0.7f, 0.6f));
-		staticShader.setVec3("dirLight.diffuse", glm::vec3(0.0f, 0.0f, 0.0f));
+		staticShader.setVec3("dirLight.ambient", glm::vec3(0.5f, 0.5f, 0.5f));
+		staticShader.setVec3("dirLight.diffuse", glm::vec3(0.4f, 0.4f, 0.4f));
 		staticShader.setVec3("dirLight.specular", glm::vec3(0.0f, 0.0f, 0.0f));
 
-		staticShader.setVec3("pointLight[0].position", lightPosition);
-		staticShader.setVec3("pointLight[0].ambient", glm::vec3(0.0f, 0.0f, 0.0f));
-		staticShader.setVec3("pointLight[0].diffuse", glm::vec3(0.0f, 0.0f, 0.0f));
-		staticShader.setVec3("pointLight[0].specular", glm::vec3(0.0f, 0.0f, 0.0f));
+		staticShader.setVec3("pointLight[0].position", glm::vec3(70.0f, 25.0f, 0.0f));
+		staticShader.setVec3("pointLight[0].ambient", glm::vec3(0.1f, 0.1f, 0.1f));
+		staticShader.setVec3("pointLight[0].diffuse", glm::vec3(0.8f, 0.8f, 0.8f));
+		staticShader.setVec3("pointLight[0].specular", glm::vec3(1.0f, 1.0f, 1.0f));
 		staticShader.setFloat("pointLight[0].constant", 0.08f);
 		staticShader.setFloat("pointLight[0].linear", 0.009f);
 		staticShader.setFloat("pointLight[0].quadratic", 0.00032f);
@@ -857,8 +858,8 @@ int main() {
 		//-------------------------------------------------------------------------------------
 		// draw skybox as last
 		// -------------------
-		/*skyboxShader.use();
-		skybox.Draw(skyboxShader, viewOp, projectionOp, camera);*/
+		skyboxShader.use();
+		skybox.Draw(skyboxShader, viewOp, projectionOp, camera);
 
 		// Limitar el framerate a 60
 		deltaTime = SDL_GetTicks() - lastFrame; // time for full 1 loop
@@ -877,7 +878,7 @@ int main() {
 	// ------------------------------------------------------------------
 	glDeleteVertexArrays(2, VAO);
 	glDeleteBuffers(2, VBO);
-	//skybox.Terminate();
+	skybox.Terminate();
 	glfwTerminate();
 	return 0;
 }
@@ -889,14 +890,37 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camera.ProcessKeyboard(FORWARD, (float)deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camera.ProcessKeyboard(BACKWARD, (float)deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera.ProcessKeyboard(LEFT, (float)deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera.ProcessKeyboard(RIGHT, (float)deltaTime);
+	if (key == GLFW_KEY_Q && action == GLFW_PRESS)
+	{
+		glm::vec3 newPos = glm::vec3(50.0f, 400.0f, 800.0f);
+		glm::vec3 target = glm::vec3(0.0f, 0.0f, 0.0f);
+		glm::vec3 newFront = glm::normalize(target - newPos);
+
+		camera.Position = newPos;
+		camera.Front = newFront;
+		// Recalculate the Right and Up vector
+		camera.Right = glm::normalize(glm::cross(camera.Front, camera.WorldUp));
+		camera.Up = glm::normalize(glm::cross(camera.Right, camera.Front));
+		//Update Yaw and Pitch angles
+		camera.Yaw = glm::degrees(atan2(camera.Front.z, camera.Front.x));
+		camera.Pitch = glm::degrees(asin(camera.Front.y));
+	}
+
+	if (key == GLFW_KEY_E && action == GLFW_PRESS)
+	{
+		camera.Position = glm::vec3(0.0f, 10.0f, 100.0f);
+		camera.Yaw = -90.0f;
+		camera.Pitch = 0.0f;
+
+		glm::vec3 front;
+		front.x = cos(glm::radians(camera.Yaw)) * cos(glm::radians(camera.Pitch));
+		front.y = sin(glm::radians(camera.Pitch));
+		front.z = sin(glm::radians(camera.Yaw)) * cos(glm::radians(camera.Pitch));
+		camera.Front = glm::normalize(front);
+		camera.Right = glm::normalize(glm::cross(camera.Front, camera.WorldUp));
+		camera.Up = glm::normalize(glm::cross(camera.Right, camera.Front));
+	}
+
 
 	//To Configure Model
 	if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
@@ -958,6 +982,23 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 		}
 	}
 
+}
+
+// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
+// ---------------------------------------------------------------------------------------------------------
+void processInput(GLFWwindow* window)
+{
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		camera.ProcessKeyboard(FORWARD, (float)deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		camera.ProcessKeyboard(BACKWARD, (float)deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		camera.ProcessKeyboard(LEFT, (float)deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		camera.ProcessKeyboard(RIGHT, (float)deltaTime);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
