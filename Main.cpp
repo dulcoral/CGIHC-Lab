@@ -57,7 +57,7 @@ GLFWmonitor* monitors;
 GLuint VBO[3], VAO[3], EBO[3];
 
 //Camera
-Camera camera(glm::vec3(0.0f, 10.0f, 100.0f));
+Camera camera(glm::vec3(0.0f, 200.0f, 800.0f));
 float MovementSpeed = 0.1f;
 GLfloat lastX = SCR_WIDTH / 2.0f,
 		lastY = SCR_HEIGHT / 2.0f;
@@ -471,8 +471,6 @@ int main() {
 
 	// Shader configuration
 	// --------------------
-	skyboxShader.use();
-	skyboxShader.setInt("skybox", 0);
 
 	// load models
 	// -----------
@@ -521,7 +519,7 @@ int main() {
 	// -----------
 	while (!glfwWindowShouldClose(window))
 	{
-		//skyboxShader.setInt("skybox", 0);
+		skyboxShader.setInt("skybox", 0);
 
 		// per-frame time logic
 		// --------------------
@@ -580,8 +578,8 @@ int main() {
 		staticShader.setFloat("spotLight[0].cutOff", glm::cos(glm::radians(10.0f)));
 		staticShader.setFloat("spotLight[0].outerCutOff", glm::cos(glm::radians(15.0f)));
 		staticShader.setFloat("spotLight[0].constant", 1.0f);
-		staticShader.setFloat("spotLight[0].linear", 0.0009f);
-		staticShader.setFloat("spotLight[0].quadratic", 0.0005f);
+		staticShader.setFloat("spotLight[0].linear", 0.0014f);
+		staticShader.setFloat("spotLight[0].quadratic", 0.000007f);
 
 		staticShader.setFloat("material_shininess", 32.0f);
 
@@ -623,8 +621,8 @@ int main() {
 		animShader.setVec3("light.direction", lightDirection);
 		animShader.setVec3("viewPos", camera.Position);
 
-		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 0.0f, 50.0f));
-		modelOp = glm::scale(modelOp, glm::vec3(0.2f));	
+		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+		modelOp = glm::scale(modelOp, glm::vec3(2.0f));	
 		animShader.setMat4("model", modelOp);
 		animacionPersonaje.Draw(animShader);
 
@@ -689,7 +687,8 @@ int main() {
 		staticShader.setMat4("view", viewOp);
 
 		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.75f, 0.0f));
-		modelOp = glm::scale(modelOp, glm::vec3(10.0f)); 
+		modelOp = glm::rotate(modelOp, glm::radians(-25.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		modelOp = glm::scale(modelOp, glm::vec3(60.0f)); 
 		staticShader.setMat4("model", modelOp);
 		escenario.Draw(staticShader);
 
@@ -892,7 +891,7 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 
 	if (key == GLFW_KEY_Q && action == GLFW_PRESS)
 	{
-		glm::vec3 newPos = glm::vec3(50.0f, 400.0f, 800.0f);
+		glm::vec3 newPos = glm::vec3(-3000.0f, 0.0f, -1000.0f);
 		glm::vec3 target = glm::vec3(0.0f, 0.0f, 0.0f);
 		glm::vec3 newFront = glm::normalize(target - newPos);
 
@@ -908,7 +907,7 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 
 	if (key == GLFW_KEY_E && action == GLFW_PRESS)
 	{
-		camera.Position = glm::vec3(0.0f, 10.0f, 100.0f);
+		camera.Position = glm::vec3(0.0f, 200.0f, 800.0f);
 		camera.Yaw = -90.0f;
 		camera.Pitch = 0.0f;
 
