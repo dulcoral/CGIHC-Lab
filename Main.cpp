@@ -35,9 +35,12 @@
 #include <vector>
 #include <string>
 #include <cstring>  // Para strlen
+#include <cmath>     // Para cos, sin
 // #include <mmsystem.h>
 
 
+
+struct DroneAnimation;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -45,6 +48,10 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void my_input(GLFWwindow* window, int key, int scancode, int action, int mods);
 void animate(void);
 void processInput(GLFWwindow* window);
+
+glm::vec3 calculateDronePosition(const DroneAnimation& anim);
+void updateDroneAnimation(DroneAnimation& anim);
+void renderDrone(Model& droneModel, Shader& shader, const DroneAnimation& anim);
 
 // GLFW error callback to diagnose initialization issues on macOS
 static void glfw_error_callback(int error, const char* description)
@@ -111,6 +118,29 @@ recorrido2 = false,
 recorrido3 = false,
 recorrido4 = false;
 
+struct DroneAnimation {
+	float currentAngle;
+	float patternRotation;
+	float trajectoryRadius;
+	float verticalAmplitude;
+	float baseHeight;
+	float centerOffsetX;
+	float centerOffsetZ;
+	float scale;
+	
+	DroneAnimation() : 
+		currentAngle(0.0f),
+		patternRotation(0.0f),
+		trajectoryRadius(800.0f),
+		verticalAmplitude(500.0f),
+		baseHeight(1250.0f),
+		centerOffsetX(-3500.0f),
+		centerOffsetZ(-2500.0f),
+		scale(15.0f) {}
+};
+
+DroneAnimation droneAnim;
+
 // ============================================================================
 // Sistema de Audio - Variables Globales
 // ============================================================================
@@ -128,8 +158,8 @@ struct AudioSystem {
 
 AudioSystem audioSystem;
 
-// Ruta del archivo de audio
-const char* audioFile = "resources/audio/Sonido de calle, trafico, carros, ruidos de ciudad.mp3";
+// Ruta archivo de audio
+const char* audioFile = "resources/audio/sonido_ciudad.mp3";
 
 //Keyframes (Manipulaci�n y dibujo)
 float	posX = 0.0f,
@@ -164,7 +194,6 @@ int playIndex = 0;
 
 void saveFrame(void)
 {
-	//printf("frameindex %d\n", FrameIndex);
 	std::cout << "Frame Index = " << FrameIndex << std::endl;
 
 	KeyFrame[FrameIndex].posX = posX;
@@ -203,19 +232,19 @@ unsigned int generateTextures(const char* filename, bool alfa, bool isPrimitive)
 	unsigned int textureID;
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_2D, textureID);
-	// set the texture wrapping parameters
+
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	// set texture filtering parameters
+
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	// load image, create texture and generate mipmaps
+
 	int width, height, nrChannels;
 	
 	if(isPrimitive)
-		stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
+		stbi_set_flip_vertically_on_load(true); 
 	else
-		stbi_set_flip_vertically_on_load(false); // tell stb_image.h to flip loaded texture's on the y-axis.
+		stbi_set_flip_vertically_on_load(false);
 
 
 	unsigned char* data = stbi_load(filename, &width, &height, &nrChannels, 0);
@@ -249,12 +278,12 @@ void LoadTextures()
 }
 
 // ============================================================================
-// InitAudio - Inicializa el sistema de audio SDL_mixer (Nueva API SDL3)
+// InitAudio - Inicializa el sistema de audio SDL_mixer
 // ============================================================================
 void InitAudio() {
     std::cout << "=== Inicializando Sistema de Audio ===" << std::endl;
     
-    // Paso 1: Inicializar SDL_mixer primero
+    //Inicializar SDL_mixer
     if (!MIX_Init()) {
         std::cerr << "ERROR: No se pudo inicializar SDL_mixer" << std::endl;
         std::cerr << "Error: " << SDL_GetError() << std::endl;
@@ -262,27 +291,24 @@ void InitAudio() {
     }
     std::cout << "[OK] SDL_mixer inicializado" << std::endl;
     
-    // Paso 2: Configurar formato de audio
+    // Configurar formato audio
     SDL_AudioSpec spec;
     spec.format = SDL_AUDIO_S16;  // 16-bit signed
     spec.channels = 2;            // Estéreo
     spec.freq = 44100;            // 44.1kHz (calidad CD)
     
-    // Paso 3: Verificar que SDL esté inicializado
-    // SDL debería haberse inicializado al inicio de main()
+
     Uint32 initialized = SDL_WasInit(SDL_INIT_AUDIO);
     if (!(initialized & SDL_INIT_AUDIO)) {
         std::cerr << "ERROR: SDL (audio) no está inicializado" << std::endl;
         std::cerr << "       SDL debería haberse inicializado al inicio del programa" << std::endl;
-        std::cerr << "\n[INFO] El programa continuará sin funcionalidad de audio" << std::endl;
+        std::cerr << "\n[INFO] El programa continuará sin audio" << std::endl;
         MIX_Quit();
         return;
     }
     std::cout << "[OK] SDL (audio) está inicializado" << std::endl;
     
-    // Paso 4: Intentar abrir un dispositivo de audio directamente para verificar que funciona
-    // Esto nos ayudará a diagnosticar si el problema es con SDL o con SDL_mixer
-    // SDL_AUDIO_DEVICE_DEFAULT_OUTPUT = 0xFFFFFFFF según SDL_audio.h
+
     const SDL_AudioDeviceID DEFAULT_OUTPUT = (SDL_AudioDeviceID)0xFFFFFFFF;
     
     std::cout << "[INFO] Verificando acceso a dispositivo de audio..." << std::endl;
@@ -294,7 +320,7 @@ void InitAudio() {
         if (errorMsg && strlen(errorMsg) > 0) {
             std::cerr << "       Error: " << errorMsg << std::endl;
         }
-        std::cerr << "\n[INFO] El programa continuará sin funcionalidad de audio" << std::endl;
+        std::cerr << "\n[INFO] El programa continuará sin audio" << std::endl;
         MIX_Quit();
         SDL_QuitSubSystem(SDL_INIT_AUDIO);
         return;
@@ -302,8 +328,6 @@ void InitAudio() {
     std::cout << "[OK] Dispositivo de audio abierto correctamente (ID: " << testDevice << ")" << std::endl;
     SDL_CloseAudioDevice(testDevice);
     
-    // Paso 5: Crear mixer con dispositivo predeterminado
-    // Usar DEFAULT_OUTPUT (0xFFFFFFFF) en lugar de 0
     std::cout << "[INFO] Creando mixer de audio..." << std::endl;
     SDL_ClearError();
     audioSystem.mixer = MIX_CreateMixerDevice(DEFAULT_OUTPUT, &spec);
@@ -313,14 +337,13 @@ void InitAudio() {
         if (errorMsg && strlen(errorMsg) > 0) {
             std::cerr << "       Error: " << errorMsg << std::endl;
         }
-        std::cerr << "\n[INFO] El programa continuará sin funcionalidad de audio" << std::endl;
+        std::cerr << "\n[INFO] El programa continuará sin audio" << std::endl;
         MIX_Quit();
         SDL_QuitSubSystem(SDL_INIT_AUDIO);
         return;
     }
-    std::cout << "[OK] Mixer de audio creado (44.1kHz, Estéreo)" << std::endl;
+    std::cout << "[OK] Mixer de audio creado" << std::endl;
     
-    // Paso 6: Cargar archivo de audio
     audioSystem.backgroundMusic = MIX_LoadAudio(audioSystem.mixer, audioFile, false);
     
     if (!audioSystem.backgroundMusic) {
@@ -337,7 +360,6 @@ void InitAudio() {
     
     std::cout << "[OK] Audio cargado: " << audioFile << std::endl;
     
-    // Paso 7: Crear track para reproducir
     audioSystem.track = MIX_CreateTrack(audioSystem.mixer);
     if (!audioSystem.track) {
         std::cerr << "ERROR: No se pudo crear el track de audio" << std::endl;
@@ -348,7 +370,6 @@ void InitAudio() {
         return;
     }
     
-    // Configurar volumen inicial (0.0 a 1.0)
     MIX_SetTrackGain(audioSystem.track, audioSystem.volume);
     std::cout << "[OK] Volumen configurado: " << (int)(audioSystem.volume * 100) << "%" << std::endl;
     
@@ -373,12 +394,10 @@ void PlayAudioTrack(int loops = -1) {
         return;
     }
     
-    // Detener track actual si está reproduciéndose (0 = sin fade out)
     if (MIX_TrackPlaying(audioSystem.track)) {
         MIX_StopTrack(audioSystem.track, 0);
     }
     
-    // Asignar audio al track
     MIX_SetTrackAudio(audioSystem.track, audioSystem.backgroundMusic);
     
     // Crear propiedades para la reproducción
@@ -396,8 +415,7 @@ void PlayAudioTrack(int loops = -1) {
         SDL_DestroyProperties(props);  // Liberar propiedades en caso de error
         return;
     }
-    
-    // Las propiedades se liberan automáticamente por MIX_PlayTrack cuando se consumen
+
     
     audioSystem.isPlaying = true;
     
@@ -405,9 +423,7 @@ void PlayAudioTrack(int loops = -1) {
               << (loops == -1 ? " (loop infinito)" : "") << std::endl;
 }
 
-// ============================================================================
-// StopAudio - Detiene la reproducción actual
-// ============================================================================
+// Detiene la reproducción actual
 void StopAudio() {
     if (!audioSystem.initialized || !audioSystem.track) {
         return;
@@ -420,9 +436,6 @@ void StopAudio() {
     }
 }
 
-// ============================================================================
-// CleanupAudio - Libera recursos de audio y cierra SDL_mixer
-// ============================================================================
 void CleanupAudio() {
     if (!audioSystem.initialized) {
         return;
@@ -430,37 +443,29 @@ void CleanupAudio() {
     
     std::cout << "\n=== Limpiando Sistema de Audio ===" << std::endl;
     
-    // Paso 1: Detener reproducción
     if (audioSystem.track && MIX_TrackPlaying(audioSystem.track)) {
         MIX_StopTrack(audioSystem.track, 0);  // 0 = sin fade out
         std::cout << "[OK] Reproducción detenida" << std::endl;
     }
     
-    // Paso 2: Liberar el track
     if (audioSystem.track) {
-        // Los tracks se destruyen automáticamente al destruir el mixer
         audioSystem.track = nullptr;
     }
     
-    // Paso 3: Liberar el audio cargado
     if (audioSystem.backgroundMusic) {
-        // MIX_Audio se libera automáticamente al destruir el mixer
         audioSystem.backgroundMusic = nullptr;
         std::cout << "[OK] Audio liberado" << std::endl;
     }
     
-    // Paso 4: Destruir mixer (libera todo)
     if (audioSystem.mixer) {
         MIX_DestroyMixer(audioSystem.mixer);
         audioSystem.mixer = nullptr;
         std::cout << "[OK] Mixer destruido" << std::endl;
     }
     
-    // Paso 5: Finalizar SDL_mixer
     MIX_Quit();
     std::cout << "[OK] SDL_mixer finalizado" << std::endl;
     
-    // Paso 6: Cerrar subsistema de audio de SDL
     SDL_QuitSubSystem(SDL_INIT_AUDIO);
     std::cout << "[OK] SDL (audio) finalizado" << std::endl;
     
@@ -514,6 +519,8 @@ void animate(void)
 	{
 		movAuto_x += 3.0f;
 	}
+
+	updateDroneAnimation(droneAnim);
 }
 
 void getResolution() {
@@ -646,11 +653,11 @@ void myData() {
 }
 
 int main() {
-    // CRÍTICO: Configurar hint de categoría de audio para macOS ANTES de inicializar SDL
+    // Configurar hint de categoria de audio para macOS ANTES de inicializar SDL
     // Esto es necesario para que SDL3 funcione correctamente en macOS 15.5 (Sequoia)
     SDL_SetHint(SDL_HINT_AUDIO_CATEGORY, "playback");
     
-    // Diagnóstico: Listar drivers de audio disponibles antes de inicializar
+    // Listar drivers de audio disponibles antes de inicializar
     std::cout << "\n[DIAGNÓSTICO] Drivers de audio disponibles:" << std::endl;
     int numDrivers = SDL_GetNumAudioDrivers();
     if (numDrivers > 0) {
@@ -662,12 +669,11 @@ int main() {
         std::cout << "  (No hay drivers disponibles)" << std::endl;
     }
     
-    // CRÍTICO: Inicializar SDL ANTES de GLFW para evitar conflictos
-    // En macOS, SDL puede necesitar permisos de audio que se solicitan automáticamente
+    // En macOS, SDL puede necesitar permisos de audio que se solicitan automaticamente
     SDL_ClearError();
     
     // Intentar inicializar SDL con audio
-    // Nota: En macOS, la primera vez que se ejecuta puede aparecer un diálogo pidiendo permisos
+    // Nota: En macOS, la primera vez que se ejecuta puede aparecer un dialogo pidiendo permisos
     int initResult = SDL_Init(SDL_INIT_AUDIO);
     if (initResult != 0) {
         const char* errorMsg = SDL_GetError();
@@ -679,7 +685,7 @@ int main() {
             std::cerr << "Mensaje: " << errorMsg << std::endl;
         }
         
-        // Mostrar información del driver actual (si hay alguno)
+        // Mostrar info del driver actual
         const char* currentDriver = SDL_GetCurrentAudioDriver();
         if (currentDriver) {
             std::cerr << "Driver actual: " << currentDriver << std::endl;
@@ -788,6 +794,7 @@ int main() {
 	// Model aquaPiernaIzquierda("resources/objects/Aquaman/piernaIzq.obj");
 	// Model aquaCabeza("resources/objects/Aquaman/cabeza.obj");
 	Model escenario("resources/objects/Escenario/museoFinal.obj");
+	Model drone("resources/objects/Drone/drone.obj");
 
     ModelAnim animacionPersonaje("resources/objects/Joe/joe.fbx");
 	animacionPersonaje.initShaders(animShader.ID);
@@ -988,6 +995,8 @@ int main() {
 		modelOp = glm::scale(modelOp, glm::vec3(60.0f)); 
 		staticShader.setMat4("model", modelOp);
 		escenario.Draw(staticShader);
+		renderDrone(drone, staticShader, droneAnim);
+
 
 		/*modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(100.0f, 0.0f, -50.0f));
 		modelOp = glm::rotate(modelOp, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -1164,24 +1173,17 @@ int main() {
 			SDL_Delay((int)(LOOP_TIME - deltaTime));
 		}
 
-		
-		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-		// -------------------------------------------------------------------------------
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
-	// glfw: terminate, clearing all previously allocated GLFW resources.
-	// ------------------------------------------------------------------
 	glDeleteVertexArrays(2, VAO);
 	glDeleteBuffers(2, VBO);
 	skybox.Terminate();
-	CleanupAudio();     // Limpiar sistema de audio
+	CleanupAudio();
 	glfwTerminate();
 	return 0;
 }
 
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
 void my_input(GLFWwindow* window, int key, int scancode, int action, int mode) 
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -1193,25 +1195,21 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 	// Tecla Q - Mover cámara Y reproducir audio de ambiente urbano
 	if (key == GLFW_KEY_Q && action == GLFW_PRESS)
 	{
-		// Función original: Mover cámara a posición específica
 		glm::vec3 newPos = glm::vec3(-3000.0f, 0.0f, -1000.0f);
 		glm::vec3 target = glm::vec3(0.0f, 0.0f, 0.0f);
 		glm::vec3 newFront = glm::normalize(target - newPos);
 
 		camera.Position = newPos;
 		camera.Front = newFront;
-		// Recalculate the Right and Up vector
 		camera.Right = glm::normalize(glm::cross(camera.Front, camera.WorldUp));
 		camera.Up = glm::normalize(glm::cross(camera.Right, camera.Front));
-		//Update Yaw and Pitch angles
 		camera.Yaw = glm::degrees(atan2(camera.Front.z, camera.Front.x));
 		camera.Pitch = glm::degrees(asin(camera.Front.y));
 		
-		// Nueva función: Reproducir audio
 		PlayAudioTrack(-1);  // Loop infinito
 	}
 
-	// Tecla E - Resetear cámara Y detener reproducción de audio
+	// Tecla E - Resetear camara Y detener reproduccion de audio
 	if (key == GLFW_KEY_E && action == GLFW_PRESS)
 	{
 		// Función original: Resetear cámara
@@ -1294,8 +1292,6 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 
 }
 
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
 void processInput(GLFWwindow* window)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -1311,14 +1307,10 @@ void processInput(GLFWwindow* window)
 		camera.ProcessKeyboard(RIGHT, (float)deltaTime);
 }
 
-// glfw: whenever the window size changed (by OS or user resize) this callback function executes
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-	// make sure the viewport matches the new window dimensions; note that width and 
-	// height will be significantly larger than specified on retina displays.
 	glViewport(0, 0, width, height);
 }
 
-// glfw: whenever the mouse moves, this callback is called
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) 
 {
 	if (firstMouse)
@@ -1329,15 +1321,46 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 	}
 
 	double xoffset = xpos - lastX;
-	double yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
-
+	double yoffset = lastY - ypos;
 	lastX = xpos;
 	lastY = ypos;
 
 	camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
-// glfw: whenever the mouse scroll wheel scrolls, this callback is called
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 	camera.ProcessMouseScroll(yoffset);
+}
+
+void updateDroneAnimation(DroneAnimation& anim) {
+	const float ANGLE_INCREMENT = 0.01f;
+	const float ROTATION_INCREMENT = 0.002f;
+	
+	anim.currentAngle += ANGLE_INCREMENT;
+	anim.patternRotation += ROTATION_INCREMENT;
+}
+
+glm::vec3 calculateDronePosition(const DroneAnimation& anim) {
+	float localX = anim.trajectoryRadius * sin(anim.currentAngle);
+	float localZ = anim.trajectoryRadius * sin(2.0f * anim.currentAngle);
+	float height = anim.baseHeight + anim.verticalAmplitude * sin(anim.currentAngle * 0.5f);
+	
+	float rotatedX = localX * cos(anim.patternRotation) - localZ * sin(anim.patternRotation);
+	float rotatedZ = localX * sin(anim.patternRotation) + localZ * cos(anim.patternRotation);
+	
+	float finalX = rotatedX + anim.centerOffsetX;
+	float finalZ = rotatedZ + anim.centerOffsetZ;
+	
+	return glm::vec3(finalX, height, finalZ);
+}
+
+void renderDrone(Model& droneModel, Shader& shader, const DroneAnimation& anim) {
+	glm::vec3 position = calculateDronePosition(anim);
+	
+	glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
+	model = glm::rotate(model, anim.currentAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+	model = glm::scale(model, glm::vec3(anim.scale));
+	
+	shader.setMat4("model", model);
+	droneModel.Draw(shader);
 }
