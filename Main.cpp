@@ -21,6 +21,8 @@
 
 #define SDL_MAIN_HANDLED
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_audio.h>  // Para SDL_AUDIO_DEVICE_DEFAULT_OUTPUT
+#include <SDL3_mixer/SDL_mixer.h>
 
 
 #include <shader_m.h>
@@ -32,6 +34,7 @@
 // STL
 #include <vector>
 #include <string>
+#include <cstring>  // Para strlen
 // #include <mmsystem.h>
 
 
@@ -108,6 +111,25 @@ recorrido2 = false,
 recorrido3 = false,
 recorrido4 = false;
 
+// ============================================================================
+// Sistema de Audio - Variables Globales
+// ============================================================================
+struct AudioSystem {
+    MIX_Mixer* mixer;
+    MIX_Audio* backgroundMusic;
+    MIX_Track* track;
+    bool initialized;
+    bool isPlaying;
+    float volume;
+    
+    AudioSystem() : mixer(nullptr), backgroundMusic(nullptr), track(nullptr),
+                    initialized(false), isPlaying(false), volume(0.5f) {}
+};
+
+AudioSystem audioSystem;
+
+// Ruta del archivo de audio
+const char* audioFile = "resources/audio/Sonido de calle, trafico, carros, ruidos de ciudad.mp3";
 
 //Keyframes (Manipulaci�n y dibujo)
 float	posX = 0.0f,
@@ -226,6 +248,225 @@ void LoadTextures()
 	t_white = generateTextures("Texturas/white.jpg", 0, false);
 }
 
+// ============================================================================
+// InitAudio - Inicializa el sistema de audio SDL_mixer (Nueva API SDL3)
+// ============================================================================
+void InitAudio() {
+    std::cout << "=== Inicializando Sistema de Audio ===" << std::endl;
+    
+    // Paso 1: Inicializar SDL_mixer primero
+    if (!MIX_Init()) {
+        std::cerr << "ERROR: No se pudo inicializar SDL_mixer" << std::endl;
+        std::cerr << "Error: " << SDL_GetError() << std::endl;
+        return;
+    }
+    std::cout << "[OK] SDL_mixer inicializado" << std::endl;
+    
+    // Paso 2: Configurar formato de audio
+    SDL_AudioSpec spec;
+    spec.format = SDL_AUDIO_S16;  // 16-bit signed
+    spec.channels = 2;            // Estéreo
+    spec.freq = 44100;            // 44.1kHz (calidad CD)
+    
+    // Paso 3: Verificar que SDL esté inicializado
+    // SDL debería haberse inicializado al inicio de main()
+    Uint32 initialized = SDL_WasInit(SDL_INIT_AUDIO);
+    if (!(initialized & SDL_INIT_AUDIO)) {
+        std::cerr << "ERROR: SDL (audio) no está inicializado" << std::endl;
+        std::cerr << "       SDL debería haberse inicializado al inicio del programa" << std::endl;
+        std::cerr << "\n[INFO] El programa continuará sin funcionalidad de audio" << std::endl;
+        MIX_Quit();
+        return;
+    }
+    std::cout << "[OK] SDL (audio) está inicializado" << std::endl;
+    
+    // Paso 4: Intentar abrir un dispositivo de audio directamente para verificar que funciona
+    // Esto nos ayudará a diagnosticar si el problema es con SDL o con SDL_mixer
+    // SDL_AUDIO_DEVICE_DEFAULT_OUTPUT = 0xFFFFFFFF según SDL_audio.h
+    const SDL_AudioDeviceID DEFAULT_OUTPUT = (SDL_AudioDeviceID)0xFFFFFFFF;
+    
+    std::cout << "[INFO] Verificando acceso a dispositivo de audio..." << std::endl;
+    SDL_ClearError();
+    SDL_AudioDeviceID testDevice = SDL_OpenAudioDevice(DEFAULT_OUTPUT, &spec);
+    if (testDevice == 0) {
+        const char* errorMsg = SDL_GetError();
+        std::cerr << "ERROR: No se pudo abrir dispositivo de audio predeterminado" << std::endl;
+        if (errorMsg && strlen(errorMsg) > 0) {
+            std::cerr << "       Error: " << errorMsg << std::endl;
+        }
+        std::cerr << "\n[INFO] El programa continuará sin funcionalidad de audio" << std::endl;
+        MIX_Quit();
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+        return;
+    }
+    std::cout << "[OK] Dispositivo de audio abierto correctamente (ID: " << testDevice << ")" << std::endl;
+    SDL_CloseAudioDevice(testDevice);
+    
+    // Paso 5: Crear mixer con dispositivo predeterminado
+    // Usar DEFAULT_OUTPUT (0xFFFFFFFF) en lugar de 0
+    std::cout << "[INFO] Creando mixer de audio..." << std::endl;
+    SDL_ClearError();
+    audioSystem.mixer = MIX_CreateMixerDevice(DEFAULT_OUTPUT, &spec);
+    if (!audioSystem.mixer) {
+        const char* errorMsg = SDL_GetError();
+        std::cerr << "ERROR: No se pudo crear el mixer de audio" << std::endl;
+        if (errorMsg && strlen(errorMsg) > 0) {
+            std::cerr << "       Error: " << errorMsg << std::endl;
+        }
+        std::cerr << "\n[INFO] El programa continuará sin funcionalidad de audio" << std::endl;
+        MIX_Quit();
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+        return;
+    }
+    std::cout << "[OK] Mixer de audio creado (44.1kHz, Estéreo)" << std::endl;
+    
+    // Paso 6: Cargar archivo de audio
+    audioSystem.backgroundMusic = MIX_LoadAudio(audioSystem.mixer, audioFile, false);
+    
+    if (!audioSystem.backgroundMusic) {
+        std::cout << "[WARN] No se pudo cargar el audio: " << audioFile << std::endl;
+        std::cout << "       Error: " << SDL_GetError() << std::endl;
+        std::cerr << "\n[ERROR] No se cargó el audio" << std::endl;
+        std::cerr << "Verifique que exista el archivo MP3 en resources/audio/" << std::endl;
+        MIX_DestroyMixer(audioSystem.mixer);
+        audioSystem.mixer = nullptr;
+        MIX_Quit();
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+        return;
+    }
+    
+    std::cout << "[OK] Audio cargado: " << audioFile << std::endl;
+    
+    // Paso 7: Crear track para reproducir
+    audioSystem.track = MIX_CreateTrack(audioSystem.mixer);
+    if (!audioSystem.track) {
+        std::cerr << "ERROR: No se pudo crear el track de audio" << std::endl;
+        MIX_DestroyMixer(audioSystem.mixer);
+        audioSystem.mixer = nullptr;
+        MIX_Quit();
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+        return;
+    }
+    
+    // Configurar volumen inicial (0.0 a 1.0)
+    MIX_SetTrackGain(audioSystem.track, audioSystem.volume);
+    std::cout << "[OK] Volumen configurado: " << (int)(audioSystem.volume * 100) << "%" << std::endl;
+    
+    audioSystem.initialized = true;
+    std::cout << "\n[OK] Sistema de audio listo" << std::endl;
+    std::cout << "=====================================" << std::endl;
+}
+
+// ============================================================================
+// PlayAudioTrack - Reproduce el audio de fondo
+// Parámetros:
+//   - loops: Número de repeticiones (-1 = infinito, 0 = una vez)
+// ============================================================================
+void PlayAudioTrack(int loops = -1) {
+    if (!audioSystem.initialized) {
+        std::cout << "[AUDIO] Sistema de audio no inicializado" << std::endl;
+        return;
+    }
+    
+    if (!audioSystem.backgroundMusic || !audioSystem.track) {
+        std::cout << "[AUDIO] Audio no disponible" << std::endl;
+        return;
+    }
+    
+    // Detener track actual si está reproduciéndose (0 = sin fade out)
+    if (MIX_TrackPlaying(audioSystem.track)) {
+        MIX_StopTrack(audioSystem.track, 0);
+    }
+    
+    // Asignar audio al track
+    MIX_SetTrackAudio(audioSystem.track, audioSystem.backgroundMusic);
+    
+    // Crear propiedades para la reproducción
+    SDL_PropertiesID props = SDL_CreateProperties();
+    if (loops == -1) {
+        SDL_SetNumberProperty(props, "SDL_mixer.loop.count", MIX_DURATION_INFINITE);
+    } else {
+        SDL_SetNumberProperty(props, "SDL_mixer.loop.count", loops);
+    }
+    
+    // Reproducir audio
+    if (!MIX_PlayTrack(audioSystem.track, props)) {
+        std::cerr << "[AUDIO] Error al reproducir audio" << std::endl;
+        std::cerr << "        Error: " << SDL_GetError() << std::endl;
+        SDL_DestroyProperties(props);  // Liberar propiedades en caso de error
+        return;
+    }
+    
+    // Las propiedades se liberan automáticamente por MIX_PlayTrack cuando se consumen
+    
+    audioSystem.isPlaying = true;
+    
+    std::cout << "[AUDIO] Reproduciendo audio de ambiente urbano" 
+              << (loops == -1 ? " (loop infinito)" : "") << std::endl;
+}
+
+// ============================================================================
+// StopAudio - Detiene la reproducción actual
+// ============================================================================
+void StopAudio() {
+    if (!audioSystem.initialized || !audioSystem.track) {
+        return;
+    }
+    
+    if (MIX_TrackPlaying(audioSystem.track)) {
+        MIX_StopTrack(audioSystem.track, 0);  // 0 = sin fade out
+        audioSystem.isPlaying = false;
+        std::cout << "[AUDIO] Reproducción detenida" << std::endl;
+    }
+}
+
+// ============================================================================
+// CleanupAudio - Libera recursos de audio y cierra SDL_mixer
+// ============================================================================
+void CleanupAudio() {
+    if (!audioSystem.initialized) {
+        return;
+    }
+    
+    std::cout << "\n=== Limpiando Sistema de Audio ===" << std::endl;
+    
+    // Paso 1: Detener reproducción
+    if (audioSystem.track && MIX_TrackPlaying(audioSystem.track)) {
+        MIX_StopTrack(audioSystem.track, 0);  // 0 = sin fade out
+        std::cout << "[OK] Reproducción detenida" << std::endl;
+    }
+    
+    // Paso 2: Liberar el track
+    if (audioSystem.track) {
+        // Los tracks se destruyen automáticamente al destruir el mixer
+        audioSystem.track = nullptr;
+    }
+    
+    // Paso 3: Liberar el audio cargado
+    if (audioSystem.backgroundMusic) {
+        // MIX_Audio se libera automáticamente al destruir el mixer
+        audioSystem.backgroundMusic = nullptr;
+        std::cout << "[OK] Audio liberado" << std::endl;
+    }
+    
+    // Paso 4: Destruir mixer (libera todo)
+    if (audioSystem.mixer) {
+        MIX_DestroyMixer(audioSystem.mixer);
+        audioSystem.mixer = nullptr;
+        std::cout << "[OK] Mixer destruido" << std::endl;
+    }
+    
+    // Paso 5: Finalizar SDL_mixer
+    MIX_Quit();
+    std::cout << "[OK] SDL_mixer finalizado" << std::endl;
+    
+    // Paso 6: Cerrar subsistema de audio de SDL
+    SDL_QuitSubSystem(SDL_INIT_AUDIO);
+    std::cout << "[OK] SDL (audio) finalizado" << std::endl;
+    
+    audioSystem.initialized = false;
+    std::cout << "===================================\n" << std::endl;
+}
 
 
 void animate(void) 
@@ -405,6 +646,61 @@ void myData() {
 }
 
 int main() {
+    // CRÍTICO: Configurar hint de categoría de audio para macOS ANTES de inicializar SDL
+    // Esto es necesario para que SDL3 funcione correctamente en macOS 15.5 (Sequoia)
+    SDL_SetHint(SDL_HINT_AUDIO_CATEGORY, "playback");
+    
+    // Diagnóstico: Listar drivers de audio disponibles antes de inicializar
+    std::cout << "\n[DIAGNÓSTICO] Drivers de audio disponibles:" << std::endl;
+    int numDrivers = SDL_GetNumAudioDrivers();
+    if (numDrivers > 0) {
+        for (int i = 0; i < numDrivers; i++) {
+            const char* driverName = SDL_GetAudioDriver(i);
+            std::cout << "  [" << i << "] " << (driverName ? driverName : "NULL") << std::endl;
+        }
+    } else {
+        std::cout << "  (No hay drivers disponibles)" << std::endl;
+    }
+    
+    // CRÍTICO: Inicializar SDL ANTES de GLFW para evitar conflictos
+    // En macOS, SDL puede necesitar permisos de audio que se solicitan automáticamente
+    SDL_ClearError();
+    
+    // Intentar inicializar SDL con audio
+    // Nota: En macOS, la primera vez que se ejecuta puede aparecer un diálogo pidiendo permisos
+    int initResult = SDL_Init(SDL_INIT_AUDIO);
+    if (initResult != 0) {
+        const char* errorMsg = SDL_GetError();
+        std::cerr << "\n╔══════════════════════════════════════════════════════════════╗" << std::endl;
+        std::cerr << "║  ERROR: No se pudo inicializar SDL (audio)                  ║" << std::endl;
+        std::cerr << "╚══════════════════════════════════════════════════════════════╝" << std::endl;
+        std::cerr << "Código de error: " << initResult << std::endl;
+        if (errorMsg && strlen(errorMsg) > 0) {
+            std::cerr << "Mensaje: " << errorMsg << std::endl;
+        }
+        
+        // Mostrar información del driver actual (si hay alguno)
+        const char* currentDriver = SDL_GetCurrentAudioDriver();
+        if (currentDriver) {
+            std::cerr << "Driver actual: " << currentDriver << std::endl;
+        } else {
+            std::cerr << "Driver actual: (ninguno)" << std::endl;
+        }
+        
+        std::cerr << "\n📋 SOLUCIÓN - Verificar permisos de audio en macOS:" << std::endl;
+        std::cerr << "   1. Abre: Preferencias del Sistema > Privacidad y Seguridad" << std::endl;
+        std::cerr << "   2. Busca 'Grabación de pantalla y audio del sistema'" << std::endl;
+        std::cerr << "   3. Asegúrate de que Terminal tenga permisos habilitados" << std::endl;
+        std::cerr << "\n⚠️  El programa continuará pero el audio NO funcionará." << std::endl;
+        std::cerr << std::endl;
+    } else {
+        std::cout << "[OK] SDL (audio) inicializado correctamente" << std::endl;
+        const char* currentDriver = SDL_GetCurrentAudioDriver();
+        if (currentDriver) {
+            std::cout << "[INFO] Driver de audio activo: " << currentDriver << std::endl;
+        }
+    }
+    
     // glfw: initialize and configure
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -446,6 +742,7 @@ int main() {
 	//Mis funciones
 	//Datos a utilizar
 	LoadTextures();
+	InitAudio();        // Inicializar sistema de audio
 	myData();
 	glEnable(GL_DEPTH_TEST);
 
@@ -878,6 +1175,7 @@ int main() {
 	glDeleteVertexArrays(2, VAO);
 	glDeleteBuffers(2, VBO);
 	skybox.Terminate();
+	CleanupAudio();     // Limpiar sistema de audio
 	glfwTerminate();
 	return 0;
 }
@@ -889,8 +1187,13 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 
+	// ========================================================================
+	// SISTEMA DE AUDIO - Control por teclado
+	// ========================================================================
+	// Tecla Q - Mover cámara Y reproducir audio de ambiente urbano
 	if (key == GLFW_KEY_Q && action == GLFW_PRESS)
 	{
+		// Función original: Mover cámara a posición específica
 		glm::vec3 newPos = glm::vec3(-3000.0f, 0.0f, -1000.0f);
 		glm::vec3 target = glm::vec3(0.0f, 0.0f, 0.0f);
 		glm::vec3 newFront = glm::normalize(target - newPos);
@@ -903,10 +1206,15 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 		//Update Yaw and Pitch angles
 		camera.Yaw = glm::degrees(atan2(camera.Front.z, camera.Front.x));
 		camera.Pitch = glm::degrees(asin(camera.Front.y));
+		
+		// Nueva función: Reproducir audio
+		PlayAudioTrack(-1);  // Loop infinito
 	}
 
+	// Tecla E - Resetear cámara Y detener reproducción de audio
 	if (key == GLFW_KEY_E && action == GLFW_PRESS)
 	{
+		// Función original: Resetear cámara
 		camera.Position = glm::vec3(0.0f, 200.0f, 800.0f);
 		camera.Yaw = -90.0f;
 		camera.Pitch = 0.0f;
@@ -918,6 +1226,9 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 		camera.Front = glm::normalize(front);
 		camera.Right = glm::normalize(glm::cross(camera.Front, camera.WorldUp));
 		camera.Up = glm::normalize(glm::cross(camera.Right, camera.Front));
+		
+		// Nueva función: Detener audio
+		StopAudio();
 	}
 
 

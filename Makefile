@@ -15,10 +15,11 @@ CC           := clang
 SRC_CPP      := Main.cpp
 SRC_C        := glad.c
 
-INCLUDE_DIRS := $(PKG_SDL3_CFLAGS) -I$(PROJECT_ROOT)/include -I$(PROJECT_ROOT)/include/glad -I$(PROJECT_ROOT)
-
 # Detección de Homebrew y pkg-config
-BREW_PREFIX  := $(shell brew --prefix 2>/dev/null)
+BREW_PREFIX  := $(shell brew --prefix 2>/dev/null || echo /opt/homebrew)
+export PKG_CONFIG_PATH ?= $(BREW_PREFIX)/lib/pkgconfig
+
+INCLUDE_DIRS := $(PKG_SDL3_CFLAGS) -I$(BREW_PREFIX)/include -I$(BREW_PREFIX)/include/SDL3_mixer -I$(PROJECT_ROOT)/include -I$(PROJECT_ROOT)/include/glad -I$(PROJECT_ROOT)
 export PKG_CONFIG_PATH ?= $(BREW_PREFIX)/lib/pkgconfig
 
 # Librerías vía pkg-config (si existen); si no, usamos fallback con -I/-L
@@ -28,12 +29,14 @@ PKG_ASSIMP_LIBS := $(shell pkg-config --libs assimp 2>/dev/null)
 PKG_ASSIMP_CFLAGS := $(shell pkg-config --cflags assimp 2>/dev/null)
 PKG_SDL3_LIBS   := $(shell pkg-config --libs sdl3 2>/dev/null)
 PKG_SDL3_CFLAGS := $(shell pkg-config --cflags sdl3 2>/dev/null)
+PKG_SDL3_MIXER_LIBS   := $(shell pkg-config --libs SDL3_mixer 2>/dev/null)
+PKG_SDL3_MIXER_CFLAGS := $(shell pkg-config --cflags SDL3_mixer 2>/dev/null)
 
 UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S),Darwin)
 FALLBACK_CFLAGS := -I$(BREW_PREFIX)/include
-FALLBACK_LIBS   := -L$(BREW_PREFIX)/lib -lglfw -lassimp
+FALLBACK_LIBS   := -L$(BREW_PREFIX)/lib -lglfw -lassimp -lSDL3 -lSDL3_mixer
 PLATFORM_GL_LIBS := -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo
 else ifeq ($(UNAME_S),Linux)
 FALLBACK_CFLAGS :=
@@ -45,8 +48,8 @@ FALLBACK_LIBS   :=
 PLATFORM_GL_LIBS :=
 endif
 
-ALL_PKG_CFLAGS := $(PKG_GLFW_CFLAGS) $(PKG_ASSIMP_CFLAGS) $(PKG_SDL3_CFLAGS)
-ALL_PKG_LIBS   := $(PKG_GLFW_LIBS) $(PKG_ASSIMP_LIBS) $(PKG_SDL3_LIBS)
+ALL_PKG_CFLAGS := $(PKG_GLFW_CFLAGS) $(PKG_ASSIMP_CFLAGS) $(PKG_SDL3_CFLAGS) $(PKG_SDL3_MIXER_CFLAGS)
+ALL_PKG_LIBS   := $(PKG_GLFW_LIBS) $(PKG_ASSIMP_LIBS) $(PKG_SDL3_LIBS) $(PKG_SDL3_MIXER_LIBS)
 
 # GL libs por plataforma definidos en PLATFORM_GL_LIBS arriba
 
@@ -60,7 +63,9 @@ else
   CXXFLAGS += -O2
   CFLAGS   += -O2
 endif
-LDFLAGS  := $(PLATFORM_GL_LIBS) $(or $(strip $(ALL_PKG_LIBS)),$(FALLBACK_LIBS)) -Wl,-rpath,$(BREW_PREFIX)/lib
+# Asegurar que SDL3_mixer esté siempre enlazado, incluso si pkg-config no lo encuentra
+SDL3_MIXER_LIB := $(if $(strip $(PKG_SDL3_MIXER_LIBS)),$(PKG_SDL3_MIXER_LIBS),-lSDL3_mixer)
+LDFLAGS  := $(PLATFORM_GL_LIBS) $(or $(strip $(ALL_PKG_LIBS)),$(FALLBACK_LIBS)) $(SDL3_MIXER_LIB) -Wl,-rpath,$(BREW_PREFIX)/lib
 
 OBJS := $(SRC_CPP:.cpp=.o) $(SRC_C:.c=.o)
 
@@ -94,7 +99,7 @@ clean:
 # Comprobación de dependencias de Homebrew
 deps:
 	@command -v brew >/dev/null 2>&1 || { echo "brew no está instalado: https://brew.sh"; exit 1; }
-	@for p in glfw assimp sdl3 pkg-config; do \
+	@for p in glfw assimp sdl3 sdl3_mixer pkg-config; do \
 	  brew list $$p >/dev/null 2>&1 || echo "Falta paquete Homebrew: $$p"; \
 	done
 
@@ -102,7 +107,7 @@ deps:
 install-deps:
 	@command -v brew >/dev/null 2>&1 || { echo "brew no está instalado: https://brew.sh"; exit 1; }
 	brew update || true
-	brew install pkg-config glfw assimp sdl3 || true
+	brew install pkg-config glfw assimp sdl3 sdl3_mixer || true
 
 # Atajos de configuración
 debug:
