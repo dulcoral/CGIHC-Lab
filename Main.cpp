@@ -79,6 +79,9 @@ void pauseBustoAnimation(BustoAnimation& anim);
 void resetBustoAnimation(BustoAnimation& anim);
 void renderBusto(Model& bustoModel, Shader& shader, const BustoAnimation& anim);
 
+void renderPerro(Model& cuerpo, Model& cola, Model& pataDerDel, Model& pataIzqDel, 
+                 Model& pataDerTra, Model& pataIzqTra, Shader& shader);
+
 // GLFW error callback to diagnose initialization issues on macOS
 static void glfw_error_callback(int error, const char* description)
 {
@@ -965,6 +968,14 @@ int main() {
 	Model escenario("resources/objects/Escenario/museoFinal.obj");
 	Model drone("resources/objects/Drone/drone.obj");
 	Model busto("resources/objects/Busto/busto.obj");
+	
+	// Perro - todas las partes
+	Model perroCuerpo("resources/objects/Perro/cuerpo.obj");
+	Model perroCola("resources/objects/Perro/cola.obj");
+	Model perroPataDerDel("resources/objects/Perro/pataD_Right.obj");
+	Model perroPataIzqDel("resources/objects/Perro/pataD_left.obj");
+	Model perroPataDerTra("resources/objects/Perro/pataT_right.obj");
+	Model perroPataIzqTra("resources/objects/Perro/pataT_left.obj");
 
     ModelAnim animacionPersonaje("resources/objects/Joe/joe.dae");
 	animacionPersonaje.initShaders(animShader.ID);
@@ -1135,13 +1146,16 @@ int main() {
 		staticShader.setMat4("projection", projectionOp);
 		staticShader.setMat4("view", viewOp);
 
-		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.75f, 0.0f));
-		modelOp = glm::rotate(modelOp, glm::radians(-25.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		modelOp = glm::scale(modelOp, glm::vec3(60.0f)); 
-		staticShader.setMat4("model", modelOp);
-		escenario.Draw(staticShader);
-		renderDrone(drone, staticShader, droneAnim);
-		renderBusto(busto, staticShader, bustoAnim);
+	modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.75f, 0.0f));
+	modelOp = glm::rotate(modelOp, glm::radians(-25.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	modelOp = glm::scale(modelOp, glm::vec3(60.0f)); 
+	staticShader.setMat4("model", modelOp);
+	escenario.Draw(staticShader);
+	renderDrone(drone, staticShader, droneAnim);
+	renderBusto(busto, staticShader, bustoAnim);
+	// Orden: cuerpo, cola, pataDelDer, pataDelIzq, pataTraDer, pataTraIzq
+	renderPerro(perroCuerpo, perroCola, perroPataDerDel, perroPataIzqDel, 
+	            perroPataDerTra, perroPataIzqTra, staticShader);
 
 		skyboxShader.use();
 		skybox.Draw(skyboxShader, viewOp, projectionOp, camera);
@@ -1295,6 +1309,32 @@ void renderDrone(Model& droneModel, Shader& shader, const DroneAnimation& anim) 
 	
 	shader.setMat4("model", model);
 	droneModel.Draw(shader);
+}
+
+void renderPerro(Model& cuerpo, Model& cola, Model& pataDerDel, Model& pataIzqDel, 
+                 Model& pataDerTra, Model& pataIzqTra, Shader& shader) {
+	float perroX = -5000.0f;
+	float perroY = -1200.0f;
+	float perroZ = -5000.0f;
+	float perroScale = 50.0f;
+	float perroRotY = -20.0f;
+	
+	glm::mat4 modelBase = glm::translate(glm::mat4(1.0f), glm::vec3(perroX, perroY, perroZ));
+	modelBase = glm::rotate(modelBase, glm::radians(perroRotY), glm::vec3(0.0f, 1.0f, 0.0f));
+	modelBase = glm::scale(modelBase, glm::vec3(perroScale));
+	
+	shader.setMat4("model", modelBase);
+	pataDerDel.Draw(shader);
+	shader.setMat4("model", modelBase);
+	pataIzqDel.Draw(shader);
+	shader.setMat4("model", modelBase);
+	pataDerTra.Draw(shader);
+	shader.setMat4("model", modelBase);
+	pataIzqTra.Draw(shader);
+	shader.setMat4("model", modelBase);
+	cola.Draw(shader);
+	shader.setMat4("model", modelBase);
+	cuerpo.Draw(shader);
 }
 
 void initBustoKeyframes(BustoAnimation& anim) {
