@@ -6,15 +6,19 @@
 /*---------------------------------------------------------*/
 /*
  * CONTROLES:
- * - WASD: Movimiento de cámara
+ * 
+ * NAVEGACIÓN:
+ * - WASD: Movimiento libre de la cámara
  * - Mouse: Rotar cámara
  * - Scroll: Zoom
  * 
- * - Q: Mover cámara a posición predefinida y reproducir audio
- * - E: Resetear cámara y detener audio
- * - Z: Vista del modelo de David
- * - P: Imprimir posición actual de la cámara (útil para debug)
+ * VISTAS PREDEFINIDAS:
+ * - E (Exterior): Vista exterior del museo + reproducir audio ambiental
+ * - I (Interior): Vista interior del museo + detener audio
+ * - Z (Zoom): Vista de zoom a los modelos principales
+ * - P (Print): Imprimir posición actual de la cámara (útil para debug)
  * 
+ * ANIMACIONES:
  * - 1: Iniciar animación del busto
  * - 2: Pausar animación del busto
  * - 3: Resetear animación del busto
@@ -1141,10 +1145,10 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 		glfwSetWindowShouldClose(window, true);
 
 	// ========================================================================
-	// SISTEMA DE AUDIO - Control por teclado
+	// SISTEMA DE AUDIO Y CÁMARA - Control por teclado
 	// ========================================================================
-	// Tecla Q - Mover cámara Y reproducir audio de ambiente urbano
-	if (key == GLFW_KEY_Q && action == GLFW_PRESS)
+	// Tecla E (Exterior) - Vista exterior del museo y reproducir audio
+	if (key == GLFW_KEY_E && action == GLFW_PRESS)
 	{
 		glm::vec3 newPos = glm::vec3(-3000.0f, 0.0f, -1000.0f);
 		glm::vec3 target = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -1158,12 +1162,12 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 		camera.Pitch = glm::degrees(asin(camera.Front.y));
 		
 		PlayAudioTrack(-1);  // Loop infinito
+		std::cout << "[CAMARA] Vista exterior del museo" << std::endl;
 	}
 
-	// Tecla E - Resetear camara Y detener reproduccion de audio
-	if (key == GLFW_KEY_E && action == GLFW_PRESS)
+	// Tecla I (Interior) - Vista interior y detener audio
+	if (key == GLFW_KEY_I && action == GLFW_PRESS)
 	{
-		// Función original: Resetear cámara
 		camera.Position = glm::vec3(0.0f, 200.0f, 800.0f);
 		camera.Yaw = -90.0f;
 		camera.Pitch = 0.0f;
@@ -1176,17 +1180,16 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 		camera.Right = glm::normalize(glm::cross(camera.Front, camera.WorldUp));
 		camera.Up = glm::normalize(glm::cross(camera.Right, camera.Front));
 		
-		// Nueva función: Detener audio
 		StopAudio();
+		std::cout << "[CAMARA] Vista interior del museo" << std::endl;
 	}
 
-	// Tecla Z - Mover cámara a vista del modelo de David
+	// Tecla Z (Zoom) - Vista de zoom a los modelos
 	if (key == GLFW_KEY_Z && action == GLFW_PRESS)
 	{
-		// Posición específica para ver bien el modelo de David
-		camera.Position = glm::vec3(878.159f, 206.344f, 315.933f);
-		camera.Yaw = -72.7428f;
-		camera.Pitch = -1.02538f;
+		camera.Position = glm::vec3(952.932f, 203.219f, 40.9843f);
+		camera.Yaw = -75.3158f;
+		camera.Pitch = 2.68517f;
 
 		glm::vec3 front;
 		front.x = cos(glm::radians(camera.Yaw)) * cos(glm::radians(camera.Pitch));
@@ -1196,7 +1199,7 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 		camera.Right = glm::normalize(glm::cross(camera.Front, camera.WorldUp));
 		camera.Up = glm::normalize(glm::cross(camera.Right, camera.Front));
 		
-		std::cout << "[CAMARA] Movida a vista de David" << std::endl;
+		std::cout << "[CAMARA] Vista de zoom a modelos" << std::endl;
 	}
 
 	// Tecla P - Imprimir posición actual de la cámara
