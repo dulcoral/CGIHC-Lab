@@ -144,6 +144,35 @@ recorrido2 = false,
 recorrido3 = false,
 recorrido4 = false;
 
+// Animación de Michelle
+enum MichelleState {
+	WALKING_RIGHT,
+	TURNING_1,
+	WALKING_FORWARD,
+	TURNING_2,
+	WALKING_FINAL,
+	TURNING_180,
+	WALKING_BACK_1,
+	TURNING_BACK_1,
+	WALKING_BACK_2,
+	TURNING_BACK_2,
+	WALKING_LEFT,
+	TURNING_FINAL
+};
+
+// Variables de posición y animación de Michelle
+float michelleMovX = 0.0f;
+float michelleMovZ = 0.0f;
+float michelleRotation = 70.0f;
+float michelleSpeed = 2.0f;
+float michelleRangeMax = 650.0f;
+float michelleWalkDistance = 200.0f;
+float michelleFinalWalk = 100.0f;
+float michelleFinalCounter = 0.0f;
+float michelleRotationSpeed = 2.0f;
+MichelleState michelleState = WALKING_RIGHT;
+bool animateMichelle = true;
+
 struct DroneAnimation {
 	float currentAngle;
 	float patternRotation;
@@ -170,6 +199,7 @@ DroneAnimation droneAnim;
 struct BustoKeyframe {
 	float posX, posY, posZ;
 	float rotX, rotZ;
+	int durationSteps;
 };
 
 struct BustoAnimation {
@@ -535,6 +565,36 @@ void CleanupAudio() {
 }
 
 
+// Funciones auxiliares para simplificar la animación de Michelle
+inline bool updateMichelleRotation(float targetAngle, MichelleState nextState, bool clockwise) {
+	if (clockwise) {
+		michelleRotation += michelleRotationSpeed;
+		if (michelleRotation >= targetAngle) {
+			michelleRotation = targetAngle;
+			michelleState = nextState;
+			return true;
+		}
+	} else {
+		michelleRotation -= michelleRotationSpeed;
+		if (michelleRotation <= targetAngle) {
+			michelleRotation = targetAngle;
+			michelleState = nextState;
+			return true;
+		}
+	}
+	return false;
+}
+
+inline bool updateMichelleMovement(float& position, float speed, float target, MichelleState nextState) {
+	position += speed;
+	if ((speed > 0 && position >= target) || (speed < 0 && position <= target)) {
+		position = target;
+		michelleState = nextState;
+		return true;
+	}
+	return false;
+}
+
 void animate(void) 
 {
    /* lightPosition.x = 70.0f * cos(my_angle);
@@ -579,6 +639,74 @@ void animate(void)
 	if (animacion)
 	{
 		movAuto_x += 3.0f;
+	}
+
+	// Animación de Michelle con estados
+	if (animateMichelle)
+	{
+		switch (michelleState)
+		{
+		case WALKING_RIGHT:
+			updateMichelleMovement(michelleMovX, michelleSpeed, michelleRangeMax, TURNING_1);
+			break;
+			
+		case TURNING_1:
+			if (updateMichelleRotation(160.0f, WALKING_FORWARD, true))
+				michelleMovZ = 0.0f;
+			break;
+			
+		case WALKING_FORWARD:
+			updateMichelleMovement(michelleMovZ, -michelleSpeed, -michelleWalkDistance, TURNING_2);
+			break;
+			
+		case TURNING_2:
+			if (updateMichelleRotation(250.0f, WALKING_FINAL, true))
+				michelleFinalCounter = 0.0f;
+			break;
+		
+		case WALKING_FINAL:
+			michelleMovX -= michelleSpeed;
+			michelleFinalCounter += michelleSpeed;
+			if (michelleFinalCounter >= michelleFinalWalk)
+				michelleState = TURNING_180;
+			break;
+		
+		case TURNING_180:
+			if (updateMichelleRotation(430.0f, WALKING_BACK_1, true)) {
+				michelleRotation = 70.0f;
+				michelleFinalCounter = 0.0f;
+			}
+			break;
+		
+		case WALKING_BACK_1:
+			michelleMovX += michelleSpeed;
+			michelleFinalCounter += michelleSpeed;
+			if (michelleFinalCounter >= michelleFinalWalk)
+				michelleState = TURNING_BACK_1;
+			break;
+		
+		case TURNING_BACK_1:
+			if (updateMichelleRotation(-20.0f, WALKING_BACK_2, false))
+				michelleRotation = 340.0f;
+			break;
+		
+		case WALKING_BACK_2:
+			updateMichelleMovement(michelleMovZ, michelleSpeed, 0.0f, TURNING_BACK_2);
+			break;
+		
+		case TURNING_BACK_2:
+			updateMichelleRotation(250.0f, WALKING_LEFT, false);
+			break;
+		
+		case WALKING_LEFT:
+			updateMichelleMovement(michelleMovX, -michelleSpeed, 0.0f, TURNING_FINAL);
+			break;
+		
+		case TURNING_FINAL:
+			if (updateMichelleRotation(430.0f, WALKING_RIGHT, true))
+				michelleRotation = 70.0f;
+			break;
+		}
 	}
 
 	updateDroneAnimation(droneAnim);
@@ -859,11 +987,11 @@ int main() {
 	Model drone("resources/objects/Drone/drone.obj");
 	Model busto("resources/objects/Busto/busto.obj");
 
-    ModelAnim animacionPersonaje("resources/objects/Joe/joe.fbx");
+    ModelAnim animacionPersonaje("resources/objects/Joe/joe.dae");
 	animacionPersonaje.initShaders(animShader.ID);
 
-    // ModelAnim caminaMichelle("resources/objects/Michelle/michelle-walking.dae");
-	// caminaMichelle.initShaders(animShader.ID);
+    ModelAnim caminaMichelle("resources/objects/Michelle/michelle.dae");
+	caminaMichelle.initShaders(animShader.ID);
 
 
 	//Inicializaci�n de KeyFrames
@@ -977,75 +1105,49 @@ int main() {
 		// Personaje Animacion
 		// -------------------------------------------------------------------------------------------------------------------------
 		//Remember to activate the shader with the animation
-		animShader.use();
-		animShader.setMat4("projection", projectionOp);
-		animShader.setMat4("view", viewOp);
+	animShader.use();
+	animShader.setMat4("projection", projectionOp);
+	animShader.setMat4("view", viewOp);
 
-		animShader.setVec3("material.specular", glm::vec3(0.5f));
-		animShader.setFloat("material.shininess", 32.0f);
-		animShader.setVec3("light.ambient", ambientColor);
-		animShader.setVec3("light.diffuse", diffuseColor);
-		animShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-		animShader.setVec3("light.direction", lightDirection);
-		animShader.setVec3("viewPos", camera.Position);
+	animShader.setVec3("material.specular", glm::vec3(0.1f));  // Reducido para menos brillo
+	animShader.setFloat("material.shininess", 8.0f);           // Reducido para superficie más mate
+	animShader.setVec3("light.ambient", ambientColor);
+	animShader.setVec3("light.diffuse", diffuseColor);
+	animShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+	animShader.setVec3("light.direction", lightDirection);
+	animShader.setVec3("viewPos", camera.Position);
 
 		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 		modelOp = glm::scale(modelOp, glm::vec3(2.0f));	
 		animShader.setMat4("model", modelOp);
 		animacionPersonaje.Draw(animShader);
-
-		// -------------------------------------------------------------------------------------------------------------------------
-		// Segundo Personaje Animacion
-		// -------------------------------------------------------------------------------------------------------------------------
-         /*
-         modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(90.0f, 0.0f, 30.0f));
-         modelOp = glm::scale(modelOp, glm::vec3(0.1f));
-         animShader.setMat4("model", modelOp);
-         caminaMichelle.Draw(animShader);
-		 */
-
-
-
-		// -------------------------------------------------------------------------------------------------------------------------
-		// Escenario Primitivas
-		// -------------------------------------------------------------------------------------------------------------------------
-		/*myShader.use();
-
-		//Tener Piso como referencia
-		glBindVertexArray(VAO[2]);
-		//Colocar cdigo aqu
-		modelOp = glm::scale(glm::mat4(1.0f), glm::vec3(40.0f, 2.0f, 40.0f));
-		modelOp = glm::translate(modelOp, glm::vec3(0.0f, -1.0f, 0.0f));
-		modelOp = glm::rotate(modelOp, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		myShader.setMat4("model", modelOp);
-		myShader.setVec3("aColor", 1.0f, 1.0f, 1.0f);
-		glBindTexture(GL_TEXTURE_2D, t_ladrillos);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-		glBindVertexArray(VAO[0]);
-		//Colocar cdigo aqu
-		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 0.0f));
-		modelOp = glm::scale(modelOp, glm::vec3(5.0f, 5.0f, 1.0f));
-		myShader.setMat4("model", modelOp);
-		myShader.setVec3("aColor", 1.0f, 1.0f, 1.0f);
-		glBindTexture(GL_TEXTURE_2D, t_unam);
-		//glDrawArrays(GL_TRIANGLES, 0, 36); //A lonely cube :(
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-		//   Segundo objeto
-		glBindVertexArray(VAO[1]);
-		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(3.0f, 0.0f, 0.0f));
-		myShader.setMat4("model", modelOp);
-		myShader.setVec3("aColor", 1.0f, 1.0f, 1.0f);
-		glBindTexture(GL_TEXTURE_2D, t_unam);
-		glDrawArrays(GL_TRIANGLES, 0, 36); //A lonely cube :(
-		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		
-		glBindVertexArray(0);
-		*/
-		// ------------------------------------------------------------------------------------------------------------------------
-		// Termina Escenario Primitivas
-		// -------------------------------------------------------------------------------------------------------------------------
+	float michelleBaseX = -1100.0f;
+	float michelleY = 0.0f;
+	float michelleZ = 50.0f;
+	float michelleScale = 2.0f;
+	
+	static bool printedMichelle = false;
+	if (!printedMichelle) {
+		std::cout << "\n=== POSICION INICIAL DE MICHELLE ===" << std::endl;
+		std::cout << "X base: " << michelleBaseX << " (posicion base)" << std::endl;
+		std::cout << "Y: " << michelleY << " (altura)" << std::endl;
+		std::cout << "Z: " << michelleZ << " (profundidad)" << std::endl;
+		std::cout << "Scale: " << michelleScale << std::endl;
+		std::cout << "Rango movimiento X: 0 a " << michelleRangeMax << std::endl;
+		std::cout << "Velocidad: " << michelleSpeed << std::endl;
+		std::cout << "Camara inicial: (0, 200, 800)" << std::endl;
+		std::cout << "====================================\n" << std::endl;
+		printedMichelle = true;
+	}
+	
+	// Renderizar Michelle con posición y rotación animada
+	modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(michelleBaseX + michelleMovX, michelleY, michelleZ + michelleMovZ));
+	modelOp = glm::rotate(modelOp, glm::radians(michelleRotation), glm::vec3(0.0f, 1.0f, 0.0f));
+	modelOp = glm::scale(modelOp, glm::vec3(michelleScale));
+	animShader.setMat4("model", modelOp);
+	caminaMichelle.Draw(animShader);
+
 
 		// -------------------------------------------------------------------------------------------------------------------------
 		// Escenario
@@ -1278,17 +1380,17 @@ void renderDrone(Model& droneModel, Shader& shader, const DroneAnimation& anim) 
 void initBustoKeyframes(BustoAnimation& anim) {
 	using namespace BustoAnimConfig;
 	
-	anim.keyframes[0]  = {BASE_X, INITIAL_HEIGHT,              BASE_Z,           0.0f,   0.0f};
-	anim.keyframes[1]  = {BASE_X, INITIAL_HEIGHT,              BASE_Z,           5.0f,   2.0f};
-	anim.keyframes[2]  = {BASE_X, INITIAL_HEIGHT,              BASE_Z,          -5.0f,  -2.0f};
-	anim.keyframes[3]  = {BASE_X, INITIAL_HEIGHT,              BASE_Z,          15.0f,   5.0f};
-	anim.keyframes[4]  = {BASE_X, INITIAL_HEIGHT,              BASE_Z,          30.0f,  10.0f};
-	anim.keyframes[5]  = {BASE_X + 1.0f, INITIAL_HEIGHT * 0.5f, BASE_Z + 1.0f,  60.0f,  30.0f};
-	anim.keyframes[6]  = {BASE_X + 2.0f, 60.0f,                BASE_Z + 2.0f,   90.0f,  90.0f};
-	anim.keyframes[7]  = {BASE_X + 3.0f, 45.0f,                BASE_Z + 3.0f,   95.0f,  95.0f};
-	anim.keyframes[8]  = {BASE_X + 4.0f, FINAL_HEIGHT,         BASE_Z + 4.0f,   90.0f,  90.0f};
-	anim.keyframes[9]  = {BASE_X + 5.0f, FINAL_HEIGHT,         BASE_Z + 5.0f,   90.0f,  90.0f};
-	anim.keyframes[10] = {BASE_X + 6.0f, FINAL_HEIGHT,         BASE_Z + 6.0f,   90.0f,  90.0f};
+	anim.keyframes[0]  = {BASE_X, INITIAL_HEIGHT,              BASE_Z,           0.0f,   0.0f,  90};
+	anim.keyframes[1]  = {BASE_X, INITIAL_HEIGHT,              BASE_Z,           5.0f,   2.0f,  80};
+	anim.keyframes[2]  = {BASE_X, INITIAL_HEIGHT,              BASE_Z,          -5.0f,  -2.0f,  80};
+	anim.keyframes[3]  = {BASE_X, INITIAL_HEIGHT,              BASE_Z,          15.0f,   5.0f,  70};
+	anim.keyframes[4]  = {BASE_X, INITIAL_HEIGHT,              BASE_Z,          30.0f,  10.0f,  60};
+	anim.keyframes[5]  = {BASE_X + 1.0f, INITIAL_HEIGHT * 0.5f, BASE_Z + 1.0f,  60.0f,  30.0f,  50};
+	anim.keyframes[6]  = {BASE_X + 2.0f, 60.0f,                BASE_Z + 2.0f,   90.0f,  90.0f,  40};
+	anim.keyframes[7]  = {BASE_X + 3.0f, 45.0f,                BASE_Z + 3.0f,   95.0f,  95.0f,  30};
+	anim.keyframes[8]  = {BASE_X + 4.0f, FINAL_HEIGHT,         BASE_Z + 4.0f,   90.0f,  90.0f,  20};
+	anim.keyframes[9]  = {BASE_X + 5.0f, FINAL_HEIGHT,         BASE_Z + 5.0f,   90.0f,  90.0f,  15};
+	anim.keyframes[10] = {BASE_X + 6.0f, FINAL_HEIGHT,         BASE_Z + 6.0f,   90.0f,  90.0f,  15};
 	
 	anim.totalKeyframes = 11;
 	anim.currentPosX = anim.keyframes[0].posX;
@@ -1301,7 +1403,7 @@ void initBustoKeyframes(BustoAnimation& anim) {
 void calculateBustoInterpolation(BustoAnimation& anim) {
 	const int curr = anim.currentKeyframe;
 	const int next = curr + 1;
-	const float steps = static_cast<float>(anim.interpolationSteps);
+	const float steps = static_cast<float>(anim.keyframes[curr].durationSteps);
 	
 	auto calcIncrement = [steps](float nextVal, float currVal) {
 		return (nextVal - currVal) / steps;
@@ -1312,6 +1414,8 @@ void calculateBustoInterpolation(BustoAnimation& anim) {
 	anim.incrementPosZ = calcIncrement(anim.keyframes[next].posZ, anim.keyframes[curr].posZ);
 	anim.incrementRotX = calcIncrement(anim.keyframes[next].rotX, anim.keyframes[curr].rotX);
 	anim.incrementRotZ = calcIncrement(anim.keyframes[next].rotZ, anim.keyframes[curr].rotZ);
+	
+	anim.interpolationSteps = anim.keyframes[curr].durationSteps;
 }
 
 void updateBustoAnimation(BustoAnimation& anim) {
