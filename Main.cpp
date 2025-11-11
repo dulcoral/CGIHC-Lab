@@ -41,6 +41,25 @@
 
 
 struct DroneAnimation;
+struct BustoAnimation;
+
+namespace DroneAnimConfig {
+	constexpr float ANGLE_INCREMENT = 0.01f;
+	constexpr float ROTATION_INCREMENT = 0.002f;
+}
+
+namespace BustoAnimConfig {
+	constexpr float INITIAL_HEIGHT = 155.0f;
+	constexpr float FINAL_HEIGHT = 30.0f;
+	constexpr float BASE_X = 20.0f;
+	constexpr float BASE_Z = 150.0f;
+}
+
+namespace BustoRenderConfig {
+	const glm::vec3 BASE_POS = glm::vec3(-50.0f, 0.0f, 150.0f);
+	const glm::vec3 PIVOT_OFFSET = glm::vec3(300.0f, -5.0f, -600.0f);
+	constexpr float SCALE = 200.0f;
+}
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -52,6 +71,13 @@ void processInput(GLFWwindow* window);
 glm::vec3 calculateDronePosition(const DroneAnimation& anim);
 void updateDroneAnimation(DroneAnimation& anim);
 void renderDrone(Model& droneModel, Shader& shader, const DroneAnimation& anim);
+
+void initBustoKeyframes(BustoAnimation& anim);
+void updateBustoAnimation(BustoAnimation& anim);
+void playBustoAnimation(BustoAnimation& anim);
+void pauseBustoAnimation(BustoAnimation& anim);
+void resetBustoAnimation(BustoAnimation& anim);
+void renderBusto(Model& bustoModel, Shader& shader, const BustoAnimation& anim);
 
 // GLFW error callback to diagnose initialization issues on macOS
 static void glfw_error_callback(int error, const char* description)
@@ -140,6 +166,41 @@ struct DroneAnimation {
 };
 
 DroneAnimation droneAnim;
+
+struct BustoKeyframe {
+	float posX, posY, posZ;
+	float rotX, rotZ;
+};
+
+struct BustoAnimation {
+	static const int MAX_KEYFRAMES = 12;
+	BustoKeyframe keyframes[MAX_KEYFRAMES];
+	int totalKeyframes;
+	int currentKeyframe;
+	int interpolationSteps;
+	int currentStep;
+	bool isPlaying;
+	bool isPaused;
+	
+	float currentPosX, currentPosY, currentPosZ;
+	float currentRotX, currentRotZ;
+	float incrementPosX, incrementPosY, incrementPosZ;
+	float incrementRotX, incrementRotZ;
+	
+	BustoAnimation() : 
+		totalKeyframes(0), 
+		currentKeyframe(0),
+		interpolationSteps(90),
+		currentStep(0),
+		isPlaying(false),
+		isPaused(false),
+		currentPosX(0), currentPosY(10.0f), currentPosZ(0),
+		currentRotX(0), currentRotZ(0),
+		incrementPosX(0), incrementPosY(0), incrementPosZ(0),
+		incrementRotX(0), incrementRotZ(0) {}
+};
+
+BustoAnimation bustoAnim;
 
 // ============================================================================
 // Sistema de Audio - Variables Globales
@@ -521,6 +582,7 @@ void animate(void)
 	}
 
 	updateDroneAnimation(droneAnim);
+	updateBustoAnimation(bustoAnim);
 }
 
 void getResolution() {
@@ -795,6 +857,7 @@ int main() {
 	// Model aquaCabeza("resources/objects/Aquaman/cabeza.obj");
 	Model escenario("resources/objects/Escenario/museoFinal.obj");
 	Model drone("resources/objects/Drone/drone.obj");
+	Model busto("resources/objects/Busto/busto.obj");
 
     ModelAnim animacionPersonaje("resources/objects/Joe/joe.fbx");
 	animacionPersonaje.initShaders(animShader.ID);
@@ -813,6 +876,7 @@ int main() {
 		KeyFrame[i].giroMonito = 0;
 	}
 
+	initBustoKeyframes(bustoAnim);
 
 	// create transformations and Projection
 	glm::mat4 modelOp = glm::mat4(1.0f);		// initialize Matrix, Use this matrix for individual models
@@ -996,173 +1060,8 @@ int main() {
 		staticShader.setMat4("model", modelOp);
 		escenario.Draw(staticShader);
 		renderDrone(drone, staticShader, droneAnim);
+		renderBusto(busto, staticShader, bustoAnim);
 
-
-		/*modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(100.0f, 0.0f, -50.0f));
-		modelOp = glm::rotate(modelOp, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		modelOp = glm::scale(modelOp, glm::vec3(5.0f));
-		staticShader.setMat4("model", modelOp);
-		//r2d2.Draw(staticShader);
-
-		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(250.0f, 0.0f, 130.0f));
-		modelOp = glm::rotate(modelOp, glm::radians(-180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		modelOp = glm::scale(modelOp, glm::vec3(5.0f));
-		staticShader.setMat4("model", modelOp);
-		//casaBruja.Draw(staticShader);
-
-		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(100.0f, 0.0f, -10.0f));
-		modelOp = glm::rotate(modelOp, glm::radians(-180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		modelOp = glm::scale(modelOp, glm::vec3(5.0f));
-		staticShader.setMat4("model", modelOp);
-		//caja.Draw(staticShader);
-
-		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(250.0f, 0.0f, -10.0f));
-		modelOp = glm::rotate(modelOp, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		staticShader.setMat4("model", modelOp);
-		//casaDoll.Draw(staticShader);
-
-		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.75f, 0.0f));
-		modelOp = glm::scale(modelOp, glm::vec3(0.2f));
-		staticShader.setMat4("model", modelOp);
-		//piso.Draw(staticShader);
-
-		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -70.0f));
-		modelOp = glm::scale(modelOp, glm::vec3(5.0f));
-		staticShader.setMat4("model", modelOp);
-		//casaVieja.Draw(staticShader);
-		*/
-		// -------------------------------------------------------------------------------------------------------------------------
-		// Carro
-		// -------------------------------------------------------------------------------------------------------------------------
-		/*
-		//modelOp = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(movAuto_x, -1.0f, movAuto_z - 15.0f));
-		tmp = modelOp = glm::rotate(modelOp, glm::radians(orienta), glm::vec3(0.0f, 1.0f, 0.0f));
-		modelOp = glm::scale(modelOp, glm::vec3(0.1f, 0.1f, 0.1f));
-		staticShader.setVec3("dirLight.specular", glm::vec3(0.6f, 0.1f, 0.9f));
-		staticShader.setMat4("model", modelOp);
-		//carro.Draw(staticShader);
-
-		modelOp = glm::translate(tmp, glm::vec3(8.5f, 2.5f, 12.9f));
-		modelOp = glm::scale(modelOp, glm::vec3(0.1f, 0.1f, 0.1f));
-		staticShader.setMat4("model", modelOp);
-		//llanta.Draw(staticShader);	//Izq delantera
-
-		modelOp = glm::translate(tmp, glm::vec3(-8.5f, 2.5f, 12.9f));
-		modelOp = glm::scale(modelOp, glm::vec3(0.1f, 0.1f, 0.1f));
-		modelOp = glm::rotate(modelOp, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		staticShader.setMat4("model", modelOp);
-		//llanta.Draw(staticShader);	//Der delantera
-
-		modelOp = glm::translate(tmp, glm::vec3(-8.5f, 2.5f, -14.5f));
-		modelOp = glm::scale(modelOp, glm::vec3(0.1f, 0.1f, 0.1f));
-		modelOp = glm::rotate(modelOp, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		staticShader.setMat4("model", modelOp);
-		//llanta.Draw(staticShader);	//Der trasera
-
-		modelOp = glm::translate(tmp, glm::vec3(8.5f, 2.5f, -14.5f));
-		modelOp = glm::scale(modelOp, glm::vec3(0.1f, 0.1f, 0.1f));
-		staticShader.setMat4("model", modelOp);
-		//llanta.Draw(staticShader);	//Izq trase
-		*/
-		// -------------------------------------------------------------------------------------------------------------------------
-		// Personaje Aquaman
-		// -------------------------------------------------------------------------------------------------------------------------
-		/*
-		//modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-		//staticShader.setMat4("model", modelOp);
-		//aquaman.Draw(staticShader);
-
-		glm::mat4 tmp01;
-		
-		tmp01 = modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(10.0f, 0.0f, 50.0f));
-		staticShader.setMat4("model", modelOp);
-		aquaCuerpo.Draw(staticShader);
-		
-		modelOp = glm::translate(glm::mat4(tmp01), glm::vec3(0.0f, 0.0f, 0.0f));
-		staticShader.setMat4("model", modelOp);
-		aquaCabeza.Draw(staticShader);
-		
-		modelOp = glm::translate(glm::mat4(tmp01), glm::vec3(0.0f, 0.0f, 0.0f));
-		staticShader.setMat4("model", modelOp);
-		aquaBrazoDerecho.Draw(staticShader);
-		
-		modelOp = glm::translate(glm::mat4(tmp01), glm::vec3(0.0f, 0.0f, 0.0f));
-		modelOp = glm::rotate(modelOp, glm::radians(giro), glm::vec3(1.0f, 0.0f, 0.0f));
-		staticShader.setMat4("model", modelOp);
-		aquaBrazoIzquierdo.Draw(staticShader);
-		
-		modelOp = glm::translate(glm::mat4(tmp01), glm::vec3(0.0f, 0.0f, 0.0f));
-		staticShader.setMat4("model", modelOp);
-		aquaPiernaDerecha.Draw(staticShader);
-		
-		modelOp = glm::translate(glm::mat4(tmp01), glm::vec3(0.0f, 0.0f, 0.0f));
-		staticShader.setMat4("model", modelOp);
-		aquaPiernaIzquierda.Draw(staticShader);
-		*/
-		
-		
-		
-		
-		
-		
-		
-		
-		// -------------------------------------------------------------------------------------------------------------------------
-		// Just in case
-		// -------------------------------------------------------------------------------------------------------------------------
-		/*modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(posX, posY, posZ));
-		tmp = modelOp = glm::rotate(modelOp, glm::radians(giroMonito), glm::vec3(0.0f, 1.0f, 0.0));
-		staticShader.setMat4("model", modelOp);
-		torso.Draw(staticShader);
-
-		//Pierna Der
-		modelOp = glm::translate(tmp, glm::vec3(-0.5f, 0.0f, -0.1f));
-		modelOp = glm::rotate(modelOp, glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0));
-		modelOp = glm::rotate(modelOp, glm::radians(-rotRodIzq), glm::vec3(1.0f, 0.0f, 0.0f));
-		staticShader.setMat4("model", modelOp);
-		piernaDer.Draw(staticShader);
-
-		//Pie Der
-		modelOp = glm::translate(modelOp, glm::vec3(0, -0.9f, -0.2f));
-		staticShader.setMat4("model", modelOp);
-		botaDer.Draw(staticShader);
-
-		//Pierna Izq
-		modelOp = glm::translate(tmp, glm::vec3(0.5f, 0.0f, -0.1f));
-		modelOp = glm::rotate(modelOp, glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		staticShader.setMat4("model", modelOp);
-		piernaIzq.Draw(staticShader);
-
-		//Pie Iz
-		modelOp = glm::translate(modelOp, glm::vec3(0, -0.9f, -0.2f));
-		staticShader.setMat4("model", modelOp);
-		botaDer.Draw(staticShader);	//Izq trase
-
-		//Brazo derecho
-		modelOp = glm::translate(tmp, glm::vec3(0.0f, -1.0f, 0.0f));
-		modelOp = glm::translate(modelOp, glm::vec3(-0.75f, 2.5f, 0));
-		modelOp = glm::rotate(modelOp, glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		staticShader.setMat4("model", modelOp);
-		brazoDer.Draw(staticShader);
-
-		//Brazo izquierdo
-		modelOp = glm::translate(tmp, glm::vec3(0.0f, -1.0f, 0.0f));
-		modelOp = glm::translate(modelOp, glm::vec3(0.75f, 2.5f, 0));
-		modelOp = glm::rotate(modelOp, glm::radians(0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		staticShader.setMat4("model", modelOp);
-		brazoIzq.Draw(staticShader);
-
-		//Cabeza
-		modelOp = glm::translate(tmp, glm::vec3(0.0f, -1.0f, 0.0f));
-		modelOp = glm::rotate(modelOp, glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0));
-		modelOp = glm::translate(modelOp, glm::vec3(0.0f, 2.5f, 0));
-		staticShader.setMat4("model", modelOp);
-		cabeza.Draw(staticShader);*/
-
-		//-------------------------------------------------------------------------------------
-		// draw skybox as last
-		// -------------------
 		skyboxShader.use();
 		skybox.Draw(skyboxShader, viewOp, projectionOp, camera);
 
@@ -1229,6 +1128,20 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 		StopAudio();
 	}
 
+	if (key == GLFW_KEY_1 && action == GLFW_PRESS) {
+		playBustoAnimation(bustoAnim);
+		std::cout << "[BUSTO] Animacion iniciada" << std::endl;
+	}
+
+	if (key == GLFW_KEY_2 && action == GLFW_PRESS) {
+		pauseBustoAnimation(bustoAnim);
+		std::cout << "[BUSTO] Animacion pausada" << std::endl;
+	}
+
+	if (key == GLFW_KEY_3 && action == GLFW_PRESS) {
+		resetBustoAnimation(bustoAnim);
+		std::cout << "[BUSTO] Animacion reseteada" << std::endl;
+	}
 
 	//To Configure Model
 	if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
@@ -1333,11 +1246,8 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 }
 
 void updateDroneAnimation(DroneAnimation& anim) {
-	const float ANGLE_INCREMENT = 0.01f;
-	const float ROTATION_INCREMENT = 0.002f;
-	
-	anim.currentAngle += ANGLE_INCREMENT;
-	anim.patternRotation += ROTATION_INCREMENT;
+	anim.currentAngle += DroneAnimConfig::ANGLE_INCREMENT;
+	anim.patternRotation += DroneAnimConfig::ROTATION_INCREMENT;
 }
 
 glm::vec3 calculateDronePosition(const DroneAnimation& anim) {
@@ -1363,4 +1273,119 @@ void renderDrone(Model& droneModel, Shader& shader, const DroneAnimation& anim) 
 	
 	shader.setMat4("model", model);
 	droneModel.Draw(shader);
+}
+
+void initBustoKeyframes(BustoAnimation& anim) {
+	using namespace BustoAnimConfig;
+	
+	anim.keyframes[0]  = {BASE_X, INITIAL_HEIGHT,              BASE_Z,           0.0f,   0.0f};
+	anim.keyframes[1]  = {BASE_X, INITIAL_HEIGHT,              BASE_Z,           5.0f,   2.0f};
+	anim.keyframes[2]  = {BASE_X, INITIAL_HEIGHT,              BASE_Z,          -5.0f,  -2.0f};
+	anim.keyframes[3]  = {BASE_X, INITIAL_HEIGHT,              BASE_Z,          15.0f,   5.0f};
+	anim.keyframes[4]  = {BASE_X, INITIAL_HEIGHT,              BASE_Z,          30.0f,  10.0f};
+	anim.keyframes[5]  = {BASE_X + 1.0f, INITIAL_HEIGHT * 0.5f, BASE_Z + 1.0f,  60.0f,  30.0f};
+	anim.keyframes[6]  = {BASE_X + 2.0f, 60.0f,                BASE_Z + 2.0f,   90.0f,  90.0f};
+	anim.keyframes[7]  = {BASE_X + 3.0f, 45.0f,                BASE_Z + 3.0f,   95.0f,  95.0f};
+	anim.keyframes[8]  = {BASE_X + 4.0f, FINAL_HEIGHT,         BASE_Z + 4.0f,   90.0f,  90.0f};
+	anim.keyframes[9]  = {BASE_X + 5.0f, FINAL_HEIGHT,         BASE_Z + 5.0f,   90.0f,  90.0f};
+	anim.keyframes[10] = {BASE_X + 6.0f, FINAL_HEIGHT,         BASE_Z + 6.0f,   90.0f,  90.0f};
+	
+	anim.totalKeyframes = 11;
+	anim.currentPosX = anim.keyframes[0].posX;
+	anim.currentPosY = anim.keyframes[0].posY;
+	anim.currentPosZ = anim.keyframes[0].posZ;
+	anim.currentRotX = anim.keyframes[0].rotX;
+	anim.currentRotZ = anim.keyframes[0].rotZ;
+}
+
+void calculateBustoInterpolation(BustoAnimation& anim) {
+	const int curr = anim.currentKeyframe;
+	const int next = curr + 1;
+	const float steps = static_cast<float>(anim.interpolationSteps);
+	
+	auto calcIncrement = [steps](float nextVal, float currVal) {
+		return (nextVal - currVal) / steps;
+	};
+	
+	anim.incrementPosX = calcIncrement(anim.keyframes[next].posX, anim.keyframes[curr].posX);
+	anim.incrementPosY = calcIncrement(anim.keyframes[next].posY, anim.keyframes[curr].posY);
+	anim.incrementPosZ = calcIncrement(anim.keyframes[next].posZ, anim.keyframes[curr].posZ);
+	anim.incrementRotX = calcIncrement(anim.keyframes[next].rotX, anim.keyframes[curr].rotX);
+	anim.incrementRotZ = calcIncrement(anim.keyframes[next].rotZ, anim.keyframes[curr].rotZ);
+}
+
+void updateBustoAnimation(BustoAnimation& anim) {
+	if (!anim.isPlaying || anim.isPaused) return;
+	
+	if (anim.currentStep >= anim.interpolationSteps) {
+		anim.currentKeyframe++;
+		
+		if (anim.currentKeyframe >= anim.totalKeyframes - 1) {
+			anim.isPlaying = false;
+			anim.currentKeyframe = 0;
+			anim.currentStep = 0;
+			std::cout << "[BUSTO] Animacion completada" << std::endl;
+			return;
+		}
+		
+		anim.currentStep = 0;
+		calculateBustoInterpolation(anim);
+	}
+	
+	anim.currentPosX += anim.incrementPosX;
+	anim.currentPosY += anim.incrementPosY;
+	anim.currentPosZ += anim.incrementPosZ;
+	anim.currentRotX += anim.incrementRotX;
+	anim.currentRotZ += anim.incrementRotZ;
+	
+	anim.currentStep++;
+}
+
+void playBustoAnimation(BustoAnimation& anim) {
+	if (!anim.isPlaying) {
+		anim.currentKeyframe = 0;
+		anim.currentStep = 0;
+		anim.currentPosX = anim.keyframes[0].posX;
+		anim.currentPosY = anim.keyframes[0].posY;
+		anim.currentPosZ = anim.keyframes[0].posZ;
+		anim.currentRotX = anim.keyframes[0].rotX;
+		anim.currentRotZ = anim.keyframes[0].rotZ;
+		calculateBustoInterpolation(anim);
+	}
+	anim.isPlaying = true;
+	anim.isPaused = false;
+}
+
+void pauseBustoAnimation(BustoAnimation& anim) {
+	anim.isPaused = !anim.isPaused;
+}
+
+void resetBustoAnimation(BustoAnimation& anim) {
+	anim.isPlaying = false;
+	anim.isPaused = false;
+	anim.currentKeyframe = 0;
+	anim.currentStep = 0;
+	anim.currentPosX = anim.keyframes[0].posX;
+	anim.currentPosY = anim.keyframes[0].posY;
+	anim.currentPosZ = anim.keyframes[0].posZ;
+	anim.currentRotX = anim.keyframes[0].rotX;
+	anim.currentRotZ = anim.keyframes[0].rotZ;
+}
+
+void renderBusto(Model& bustoModel, Shader& shader, const BustoAnimation& anim) {
+	using namespace BustoRenderConfig;
+	
+	glm::vec3 bustoPos(
+		BASE_POS.x + PIVOT_OFFSET.x, 
+		anim.currentPosY + PIVOT_OFFSET.y, 
+		BASE_POS.z + PIVOT_OFFSET.z
+	);
+	
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, bustoPos);
+	model = glm::rotate(model, glm::radians(anim.currentRotZ), glm::vec3(0.0f, 0.0f, 1.0f));
+	model = glm::rotate(model, glm::radians(anim.currentRotX), glm::vec3(1.0f, 0.0f, 0.0f));
+	model = glm::scale(model, glm::vec3(SCALE));
+	shader.setMat4("model", model);
+	bustoModel.Draw(shader);
 }
