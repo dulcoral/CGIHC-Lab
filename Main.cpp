@@ -161,6 +161,23 @@ float michelleRotationSpeed = 2.0f;
 MichelleState michelleState = WALKING_RIGHT;
 bool animateMichelle = true;
 
+// Variables de animación del perro
+float perroPataDerDelantera = 0.0f;
+float perroPataDerTrasera = 0.0f;
+float perroPataIzqDelantera = 0.0f;
+float perroPataIzqTrasera = 0.0f;
+float perroCola = 0.0f;
+float perroMovX = 0.0f;
+float perroAnimSpeed = 1.0f;
+float perroPataMagMax = 3.5f;
+float perroMovSpeed = 1.5f;
+float perroMovRange = 600.0f;
+bool perroAnimDirection = true;
+bool perroMovDirection = true;
+float perroRotacion = -20.0f;
+bool perroGirando = false;
+float perroRotacionObjetivo = -20.0f;
+
 struct DroneAnimation {
 	float currentAngle;
 	float patternRotation;
@@ -693,6 +710,63 @@ void animate(void)
 
 	updateDroneAnimation(droneAnim);
 	updateBustoAnimation(bustoAnim);
+	
+	// Animación del perro
+	if (perroAnimDirection) {
+		perroPataDerDelantera += perroAnimSpeed;
+		perroPataDerTrasera -= perroAnimSpeed;
+		perroPataIzqDelantera -= perroAnimSpeed;
+		perroPataIzqTrasera += perroAnimSpeed;
+		perroCola += perroAnimSpeed;
+		
+		if (perroPataDerDelantera >= perroPataMagMax) {
+			perroAnimDirection = false;
+		}
+	} else {
+		perroPataDerDelantera -= perroAnimSpeed;
+		perroPataDerTrasera += perroAnimSpeed;
+		perroPataIzqDelantera += perroAnimSpeed;
+		perroPataIzqTrasera -= perroAnimSpeed;
+		perroCola -= perroAnimSpeed;
+		
+		if (perroPataDerDelantera <= -perroPataMagMax) {
+			perroAnimDirection = true;
+		}
+	}
+	
+	// Movimiento de lado a lado
+	if (perroGirando) {
+		float velocidadGiro = 3.0f;
+		if (perroRotacion < perroRotacionObjetivo) {
+			perroRotacion += velocidadGiro;
+			if (perroRotacion >= perroRotacionObjetivo) {
+				perroRotacion = perroRotacionObjetivo;
+				perroGirando = false;
+			}
+		} else {
+			perroRotacion -= velocidadGiro;
+			if (perroRotacion <= perroRotacionObjetivo) {
+				perroRotacion = perroRotacionObjetivo;
+				perroGirando = false;
+			}
+		}
+	} else {
+		if (perroMovDirection) {
+			perroMovX -= perroMovSpeed;
+			if (perroMovX <= -perroMovRange) {
+				perroGirando = true;
+				perroRotacionObjetivo = perroRotacion + 180.0f;
+				perroMovDirection = false;
+			}
+		} else {
+			perroMovX += perroMovSpeed;
+			if (perroMovX >= 0.0f) {
+				perroGirando = true;
+				perroRotacionObjetivo = perroRotacion + 180.0f;
+				perroMovDirection = true;
+			}
+		}
+	}
 }
 
 void getResolution() {
@@ -1313,26 +1387,40 @@ void renderDrone(Model& droneModel, Shader& shader, const DroneAnimation& anim) 
 
 void renderPerro(Model& cuerpo, Model& cola, Model& pataDerDel, Model& pataIzqDel, 
                  Model& pataDerTra, Model& pataIzqTra, Shader& shader) {
-	float perroX = -5000.0f;
-	float perroY = -1200.0f;
-	float perroZ = -5000.0f;
+	float perroBaseX = -5000.0f;
+	float perroBaseY = -1200.0f;
+	float perroBaseZ = -5000.0f;
 	float perroScale = 50.0f;
-	float perroRotY = -20.0f;
 	
-	glm::mat4 modelBase = glm::translate(glm::mat4(1.0f), glm::vec3(perroX, perroY, perroZ));
-	modelBase = glm::rotate(modelBase, glm::radians(perroRotY), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelBase = glm::scale(modelBase, glm::vec3(perroScale));
+	glm::mat4 modelBase = glm::translate(glm::mat4(1.0f), glm::vec3(perroBaseX + perroMovX, perroBaseY, perroBaseZ));
+	modelBase = glm::rotate(modelBase, glm::radians(perroRotacion), glm::vec3(0.0f, 1.0f, 0.0f));
 	
-	shader.setMat4("model", modelBase);
+	glm::mat4 modelPata = glm::rotate(modelBase, glm::radians(perroPataDerDelantera), glm::vec3(1.0f, 0.0f, 0.0f));
+	modelPata = glm::scale(modelPata, glm::vec3(perroScale));
+	shader.setMat4("model", modelPata);
 	pataDerDel.Draw(shader);
-	shader.setMat4("model", modelBase);
+	
+	modelPata = glm::rotate(modelBase, glm::radians(perroPataIzqDelantera), glm::vec3(1.0f, 0.0f, 0.0f));
+	modelPata = glm::scale(modelPata, glm::vec3(perroScale));
+	shader.setMat4("model", modelPata);
 	pataIzqDel.Draw(shader);
-	shader.setMat4("model", modelBase);
+	
+	modelPata = glm::rotate(modelBase, glm::radians(perroPataDerTrasera), glm::vec3(1.0f, 0.0f, 0.0f));
+	modelPata = glm::scale(modelPata, glm::vec3(perroScale));
+	shader.setMat4("model", modelPata);
 	pataDerTra.Draw(shader);
-	shader.setMat4("model", modelBase);
+	
+	modelPata = glm::rotate(modelBase, glm::radians(perroPataIzqTrasera), glm::vec3(1.0f, 0.0f, 0.0f));
+	modelPata = glm::scale(modelPata, glm::vec3(perroScale));
+	shader.setMat4("model", modelPata);
 	pataIzqTra.Draw(shader);
-	shader.setMat4("model", modelBase);
+	
+	glm::mat4 modelCola = glm::rotate(modelBase, glm::radians(perroCola), glm::vec3(0.0f, 1.0f, 0.0f));
+	modelCola = glm::scale(modelCola, glm::vec3(perroScale));
+	shader.setMat4("model", modelCola);
 	cola.Draw(shader);
+	
+	modelBase = glm::scale(modelBase, glm::vec3(perroScale));
 	shader.setMat4("model", modelBase);
 	cuerpo.Draw(shader);
 }
