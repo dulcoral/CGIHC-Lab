@@ -156,7 +156,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 3
-map_Kd escultura4.png
+map_Kd vidrio.png
 
 newmtl Material.016
 Ns 430.287872
@@ -167,7 +167,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 3
-map_Kd escultura5.png
+map_Kd vidrio.png
 
 newmtl Material.017
 Ns 559.064880

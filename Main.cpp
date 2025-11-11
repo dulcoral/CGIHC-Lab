@@ -209,6 +209,11 @@ constexpr float PERRO_MOV_SPEED = 1.5f;
 constexpr float PERRO_MOV_RANGE = 600.0f;
 constexpr float PERRO_INITIAL_ROTATION = -20.0f;
 
+// Reliquia - Constantes
+constexpr float RELIQUIA_ROTATION_SPEED = 1.5f;  // Velocidad media de rotación
+constexpr float RELIQUIA_BOUNCE_SPEED = 3.0f;    // Velocidad de saltitos (más rápida)
+constexpr float RELIQUIA_BOUNCE_HEIGHT = 15.0f;  // Altura máxima del saltito (más notorio)
+
 // ============================================================================
 // VARIABLES DE ESTADO DE ANIMACIÓN
 // ============================================================================
@@ -232,6 +237,10 @@ bool perroMovDirection = true;
 float perroRotacion = PERRO_INITIAL_ROTATION;
 bool perroGirando = false;
 float perroRotacionObjetivo = PERRO_INITIAL_ROTATION;
+
+// Variables de animación de la reliquia
+float reliquiaRotation = 0.0f;
+float reliquiaBounceAngle = 0.0f;  // Ángulo para controlar el movimiento sinusoidal del salto
 
 struct DroneAnimation {
 	float currentAngle;
@@ -746,6 +755,19 @@ void animate(void)
 				perroMovDirection = true;
 			}
 		}
+	}
+	
+	// Animación de la reliquia
+	// Rotación continua sobre su propio eje (eje Y)
+	reliquiaRotation += RELIQUIA_ROTATION_SPEED;
+	if (reliquiaRotation >= 360.0f) {
+		reliquiaRotation -= 360.0f;
+	}
+	
+	// Saltitos pequeños usando movimiento sinusoidal
+	reliquiaBounceAngle += RELIQUIA_BOUNCE_SPEED;
+	if (reliquiaBounceAngle >= 360.0f) {
+		reliquiaBounceAngle -= 360.0f;
 	}
 }
 
@@ -1539,12 +1561,26 @@ void renderdavid(Model& davidModel, Shader& shader) {
 }
 
 void renderReliquia(Model& reliquiaModel, Shader& shader) {
-	// Renderizar el modelo de la Reliquia con transformaciones específicas
-	// Posición: (-791, 150, -567), Rotación: -90° en X, Escala: 2.5
+	// Posición base: (-791, 150, -567), Rotación base: -90° en X, Escala: 2.5
+	// Animaciones: Rotación sobre eje Y + saltitos pequeños
 	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(-791.0f, 150.0f, -567.0f));
+	
+	// abs() hace que siempre suba desde la base, creando efecto de rebote
+	float bounceOffset = abs(sin(glm::radians(reliquiaBounceAngle))) * RELIQUIA_BOUNCE_HEIGHT;
+	
+	// Aplicar transformaciones en orden:
+	// 1. Trasladar a posición base + offset de salto
+	model = glm::translate(model, glm::vec3(-791.0f, 150.0f + bounceOffset, -567.0f));
+	
+	// 2. Rotar para orientar el modelo correctamente (rotación base)
 	model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	
+	// 3. Rotar sobre su propio eje (animación)
+	model = glm::rotate(model, glm::radians(reliquiaRotation), glm::vec3(0.0f, 0.0f, 1.0f));
+	
+	// 4. Escalar
 	model = glm::scale(model, glm::vec3(2.5f));
+	
 	shader.setMat4("model", model);
 	reliquiaModel.Draw(shader);
 }
