@@ -1,0 +1,14 @@
+# Blender 4.5.2 LTS MTL File: 'statuette_old_man.blend'
+# www.blender.org
+
+newmtl mt_statuette_old_man.001
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd statuette_old_man_bcolor.png
+map_Ns statuette_old_man_rough.png
+map_refl statuette_old_man_metal.png
+map_Bump -bm 1.000000 statuette_old_man_norm.png

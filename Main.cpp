@@ -3,6 +3,25 @@
 /*-----------------    2026-1   ---------------------------*/
 /*------------- Alumno: Dulce Coral Rodriguez Garcia    ---------------*/
 /*------------- No. Cuenta 313144545     ---------------*/
+/*---------------------------------------------------------*/
+/*
+ * CONTROLES:
+ * - WASD: Movimiento de cámara
+ * - Mouse: Rotar cámara
+ * - Scroll: Zoom
+ * 
+ * - Q: Mover cámara a posición predefinida y reproducir audio
+ * - E: Resetear cámara y detener audio
+ * - Z: Vista del modelo de David
+ * - P: Imprimir posición actual de la cámara (útil para debug)
+ * 
+ * - 1: Iniciar animación del busto
+ * - 2: Pausar animación del busto
+ * - 3: Resetear animación del busto
+ * 
+ * - ESC: Salir del programa
+ */
+/*---------------------------------------------------------*/
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -78,6 +97,7 @@ void playBustoAnimation(BustoAnimation& anim);
 void pauseBustoAnimation(BustoAnimation& anim);
 void resetBustoAnimation(BustoAnimation& anim);
 void renderBusto(Model& bustoModel, Shader& shader, const BustoAnimation& anim);
+void renderdavid(Model& davidModel, Shader& shader);
 
 void renderPerro(Model& cuerpo, Model& cola, Model& pataDerDel, Model& pataIzqDel, 
                  Model& pataDerTra, Model& pataIzqTra, Shader& shader);
@@ -109,18 +129,12 @@ double	deltaTime = 5.0f,
 lastFrame = 0.0f;
 
 void getResolution(void);
-void myData(void);							// De la practica 4
-void LoadTextures(void);					// De la pr�ctica 6
-unsigned int generateTextures(char*, bool, bool);	// De la pr�ctica 6
+void myData(void);
+void LoadTextures(void);
+unsigned int generateTextures(const char*, bool, bool);
 
-// Keyboard variables (no longer needed - camera controlled by WASD)
-
-//Texture
-unsigned int	t_smile,
-t_toalla,
-t_unam,
-t_white,
-t_ladrillos;
+//Texture (no se usan actualmente pero se mantiene la infraestructura por compatibilidad)
+unsigned int t_white;
 
 //Lighting
 glm::vec3 lightDirection(-1.0f, 0.0f, 0.0f);
@@ -257,72 +271,6 @@ AudioSystem audioSystem;
 // Ruta archivo de audio
 const char* audioFile = "resources/audio/sonido_ciudad.mp3";
 
-//Keyframes (Manipulaci�n y dibujo)
-float	posX = 0.0f,
-		posY = 0.0f,
-		posZ = 0.0f,
-		rotRodIzq = 0.0f,
-		giroMonito = 0.0f;
-float	incX = 0.0f,
-		incY = 0.0f,
-		incZ = 0.0f,
-		rotRodIzqInc = 0.0f,
-		giroMonitoInc = 0.0f;
-
-#define MAX_FRAMES 9
-int i_max_steps = 60;
-int i_curr_steps = 0;
-typedef struct _frame
-{
-	//Variables para GUARDAR Key Frames
-	float posX;		//Variable para PosicionX
-	float posY;		//Variable para PosicionY
-	float posZ;		//Variable para PosicionZ
-	float rotRodIzq;
-	float giroMonito;
-
-}FRAME;
-
-FRAME KeyFrame[MAX_FRAMES];
-int FrameIndex = 0;			//introducir n�mero en caso de tener Key guardados
-bool play = false;
-int playIndex = 0;
-
-void saveFrame(void)
-{
-	std::cout << "Frame Index = " << FrameIndex << std::endl;
-
-	KeyFrame[FrameIndex].posX = posX;
-	KeyFrame[FrameIndex].posY = posY;
-	KeyFrame[FrameIndex].posZ = posZ;
-
-	KeyFrame[FrameIndex].rotRodIzq = rotRodIzq;
-	KeyFrame[FrameIndex].giroMonito = giroMonito;
-
-	FrameIndex++;
-}
-
-void resetElements(void)
-{
-	posX = KeyFrame[0].posX;
-	posY = KeyFrame[0].posY;
-	posZ = KeyFrame[0].posZ;
-
-	rotRodIzq = KeyFrame[0].rotRodIzq;
-	giroMonito = KeyFrame[0].giroMonito;
-}
-
-void interpolation(void)
-{
-	incX = (KeyFrame[playIndex + 1].posX - KeyFrame[playIndex].posX) / i_max_steps;
-	incY = (KeyFrame[playIndex + 1].posY - KeyFrame[playIndex].posY) / i_max_steps;
-	incZ = (KeyFrame[playIndex + 1].posZ - KeyFrame[playIndex].posZ) / i_max_steps;
-
-	rotRodIzqInc = (KeyFrame[playIndex + 1].rotRodIzq - KeyFrame[playIndex].rotRodIzq) / i_max_steps;
-	giroMonitoInc = (KeyFrame[playIndex + 1].giroMonito - KeyFrame[playIndex].giroMonito) / i_max_steps;
-
-}
-
 unsigned int generateTextures(const char* filename, bool alfa, bool isPrimitive)
 {
 	unsigned int textureID;
@@ -364,12 +312,7 @@ unsigned int generateTextures(const char* filename, bool alfa, bool isPrimitive)
 
 void LoadTextures()
 {
-
-	t_smile = generateTextures("Texturas/awesomeface.png", 1, true);
-	t_toalla = generateTextures("Texturas/toalla.tga", 0, true);
-	t_unam = generateTextures("Texturas/escudo_unam.jpg", 0, true);
-	t_ladrillos = generateTextures("Texturas/bricks.jpg", 0, true);
-	//This must be the last
+	// Cargar solo la textura blanca que puede ser usada como default
 	t_white = generateTextures("Texturas/white.jpg", 0, false);
 }
 
@@ -602,44 +545,6 @@ inline bool updateMichelleMovement(float& position, float speed, float target, M
 
 void animate(void) 
 {
-   /* lightPosition.x = 70.0f * cos(my_angle);
-    lightPosition.z = 70.0f * sin(my_angle);
-
-    my_angle += 0.01f;*/
-
-	if (play)
-	{
-		if (i_curr_steps >= i_max_steps) //end of animation between frames?
-		{
-			playIndex++;
-			if (playIndex > FrameIndex - 2)	//end of total animation?
-			{
-				std::cout << "Animation ended" << std::endl;
-				//printf("termina anim\n");
-				playIndex = 0;
-				play = false;
-			}
-			else //Next frame interpolations
-			{
-				i_curr_steps = 0; //Reset counter
-				//Interpolation
-				interpolation();
-			}
-		}
-		else
-		{
-			//Draw animation
-			posX += incX;
-			posY += incY;
-			posZ += incZ;
-
-			rotRodIzq += rotRodIzqInc;
-			giroMonito += giroMonitoInc;
-
-			i_curr_steps++;
-		}
-	}
-
 	// Animación de Michelle con estados
 	if (animateMichelle)
 	{
@@ -1021,27 +926,11 @@ int main() {
 	// Shader configuration
 	// --------------------
 
-	// load models
-	// -----------
-	//Model piso("resources/objects/piso/piso.obj");
-	// Model carro("resources/objects/lambo/carroceria.obj");
-	// Model llanta("resources/objects/lambo/Wheel.obj");
-	// Model casaVieja("resources/objects/casa/OldHouse.obj");
-	// //Model cubo("resources/objects/cubo/cube02.obj");
-	// Model casaDoll("resources/objects/Casa/DollHouse.obj");
-	// Model casaBruja("resources/objects/CasaBrujas/brujas.obj");
-	// Model caja("resources/objects/Caja/cajaTextura.obj");
-	// Model r2d2("resources/objects/R2D2/r2d2.obj");
-	// Model aquaman("resources/objects/Aquaman/aquaman.obj");
-	// Model aquaCuerpo("resources/objects/Aquaman/torso.obj");
-	// Model aquaBrazoDerecho("resources/objects/Aquaman/brazoDer.obj");
-	// Model aquaBrazoIzquierdo("resources/objects/Aquaman/brazoIzq.obj");
-	// Model aquaPiernaDerecha("resources/objects/Aquaman/piernaDer.obj");
-	// Model aquaPiernaIzquierda("resources/objects/Aquaman/piernaIzq.obj");
-	// Model aquaCabeza("resources/objects/Aquaman/cabeza.obj");
+	// Cargar modelos del proyecto
 	Model escenario("resources/objects/Escenario/museoFinal.obj");
 	Model drone("resources/objects/Drone/drone.obj");
 	Model busto("resources/objects/Busto/busto.obj");
+	Model david("resources/objects/David/david.obj");
 	
 	// Perro - todas las partes
 	Model perroCuerpo("resources/objects/Perro/cuerpo.obj");
@@ -1057,17 +946,7 @@ int main() {
     ModelAnim caminaMichelle("resources/objects/Michelle/michelle.dae");
 	caminaMichelle.initShaders(animShader.ID);
 
-
-	//Inicializaci�n de KeyFrames
-	for (int i = 0; i < MAX_FRAMES; i++)
-	{
-		KeyFrame[i].posX = 0;
-		KeyFrame[i].posY = 0;
-		KeyFrame[i].posZ = 0;
-		KeyFrame[i].rotRodIzq = 0;
-		KeyFrame[i].giroMonito = 0;
-	}
-
+	// Inicializar animaciones
 	initBustoKeyframes(bustoAnim);
 
 	// create transformations and Projection
@@ -1143,26 +1022,16 @@ int main() {
 
 		staticShader.setFloat("material_shininess", 32.0f);
 
-		//glm::mat4 model = glm::mat4(1.0f);
-		glm::mat4 tmp = glm::mat4(1.0f);
-		// view/projection transformations
-		//glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
+		// View/projection transformations
 		projectionOp = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
 		viewOp = camera.GetViewMatrix();
 		staticShader.setMat4("projection", projectionOp);
 		staticShader.setMat4("view", viewOp);
 
-		//Setup shader for primitives
+		// Setup shader for primitives (si se necesita en el futuro)
 		myShader.use();
-		// view/projection transformations
-		//projectionOp = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 400.0f);
-		viewOp = camera.GetViewMatrix();
-		// pass them to the shaders
-		//myShader.setMat4("model", modelOp);
 		myShader.setMat4("view", viewOp);
-		// note: currently we set the projection matrix each frame, but since the projection matrix rarely changes it's often best practice to set it outside the main loop only once.
 		myShader.setMat4("projection", projectionOp);
-		/**********/
 
 
 		// -------------------------------------------------------------------------------------------------------------------------
@@ -1186,24 +1055,11 @@ int main() {
 		animShader.setMat4("model", modelOp);
 		animacionPersonaje.Draw(animShader);
 		
+	// Configuración de Michelle
 	float michelleBaseX = -1100.0f;
 	float michelleY = 0.0f;
 	float michelleZ = 50.0f;
 	float michelleScale = 2.0f;
-	
-	static bool printedMichelle = false;
-	if (!printedMichelle) {
-		std::cout << "\n=== POSICION INICIAL DE MICHELLE ===" << std::endl;
-		std::cout << "X base: " << michelleBaseX << " (posicion base)" << std::endl;
-		std::cout << "Y: " << michelleY << " (altura)" << std::endl;
-		std::cout << "Z: " << michelleZ << " (profundidad)" << std::endl;
-		std::cout << "Scale: " << michelleScale << std::endl;
-		std::cout << "Rango movimiento X: 0 a " << michelleRangeMax << std::endl;
-		std::cout << "Velocidad: " << michelleSpeed << std::endl;
-		std::cout << "Camara inicial: (0, 200, 800)" << std::endl;
-		std::cout << "====================================\n" << std::endl;
-		printedMichelle = true;
-	}
 	
 	// Renderizar Michelle con posición y rotación animada
 	modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(michelleBaseX + michelleMovX, michelleY, michelleZ + michelleMovZ));
@@ -1227,6 +1083,7 @@ int main() {
 	escenario.Draw(staticShader);
 	renderDrone(drone, staticShader, droneAnim);
 	renderBusto(busto, staticShader, bustoAnim);
+	renderdavid(david, staticShader);
 	// Orden: cuerpo, cola, pataDelDer, pataDelIzq, pataTraDer, pataTraIzq
 	renderPerro(perroCuerpo, perroCola, perroPataDerDel, perroPataIzqDel, 
 	            perroPataDerTra, perroPataIzqTra, staticShader);
@@ -1295,6 +1152,39 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 		
 		// Nueva función: Detener audio
 		StopAudio();
+	}
+
+	// Tecla Z - Mover cámara a vista del modelo de David
+	if (key == GLFW_KEY_Z && action == GLFW_PRESS)
+	{
+		// Posición específica para ver bien el modelo de David
+		camera.Position = glm::vec3(878.159f, 206.344f, 315.933f);
+		camera.Yaw = -72.7428f;
+		camera.Pitch = -1.02538f;
+
+		glm::vec3 front;
+		front.x = cos(glm::radians(camera.Yaw)) * cos(glm::radians(camera.Pitch));
+		front.y = sin(glm::radians(camera.Pitch));
+		front.z = sin(glm::radians(camera.Yaw)) * cos(glm::radians(camera.Pitch));
+		camera.Front = glm::normalize(front);
+		camera.Right = glm::normalize(glm::cross(camera.Front, camera.WorldUp));
+		camera.Up = glm::normalize(glm::cross(camera.Right, camera.Front));
+		
+		std::cout << "[CAMARA] Movida a vista de David" << std::endl;
+	}
+
+	// Tecla P - Imprimir posición actual de la cámara
+	if (key == GLFW_KEY_P && action == GLFW_PRESS)
+	{
+		std::cout << "\n========================================" << std::endl;
+		std::cout << "[CAMARA] Posicion actual:" << std::endl;
+		std::cout << "  Position: (" << camera.Position.x << ", " 
+		          << camera.Position.y << ", " << camera.Position.z << ")" << std::endl;
+		std::cout << "  Front:    (" << camera.Front.x << ", " 
+		          << camera.Front.y << ", " << camera.Front.z << ")" << std::endl;
+		std::cout << "  Yaw:      " << camera.Yaw << " grados" << std::endl;
+		std::cout << "  Pitch:    " << camera.Pitch << " grados" << std::endl;
+		std::cout << "========================================\n" << std::endl;
 	}
 
 	if (key == GLFW_KEY_1 && action == GLFW_PRESS) {
@@ -1540,4 +1430,15 @@ void renderBusto(Model& bustoModel, Shader& shader, const BustoAnimation& anim) 
 	model = glm::scale(model, glm::vec3(SCALE));
 	shader.setMat4("model", model);
 	bustoModel.Draw(shader);
+}
+
+void renderdavid(Model& davidModel, Shader& shader) {
+	// Renderizar el modelo de David con transformaciones específicas
+	// Posición: (995, 155, -36), Rotación: 90° en Y, Escala: 0.6
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(995.0f, 155.0f, -36.0f));
+	model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	model = glm::scale(model, glm::vec3(0.6f));
+	shader.setMat4("model", model);
+	davidModel.Draw(shader);
 }
