@@ -110,13 +110,7 @@ void myData(void);							// De la practica 4
 void LoadTextures(void);					// De la pr�ctica 6
 unsigned int generateTextures(char*, bool, bool);	// De la pr�ctica 6
 
-//For Keyboard
-float	movX = 0.0f,
-movY = 0.0f,
-movZ = -5.0f,
-rotX = 0.0f,
-giro = 0.0f,
-my_angle = 0.0f;
+// Keyboard variables (no longer needed - camera controlled by WASD)
 
 //Texture
 unsigned int	t_smile,
@@ -126,7 +120,6 @@ t_white,
 t_ladrillos;
 
 //Lighting
-glm::vec3 lightPosition(0.0f, 4.0f, -10.0f);
 glm::vec3 lightDirection(-1.0f, 0.0f, 0.0f);
 
 //// Light
@@ -134,15 +127,7 @@ glm::vec3 lightColor = glm::vec3(0.7f);
 glm::vec3 diffuseColor = lightColor * glm::vec3(0.5f);
 glm::vec3 ambientColor = diffuseColor * glm::vec3(0.75f);
 
-// posiciones
-float	movAuto_x = 0.0f,
-movAuto_z = 0.0f,
-orienta = 90.0f;
-bool	animacion = false,
-recorrido1 = true,
-recorrido2 = false,
-recorrido3 = false,
-recorrido4 = false;
+// (Removed unused car animation variables)
 
 // Animación de Michelle
 enum MichelleState {
@@ -633,12 +618,6 @@ void animate(void)
 
 			i_curr_steps++;
 		}
-	}
-
-	//Veh�culo
-	if (animacion)
-	{
-		movAuto_x += 3.0f;
 	}
 
 	// Animación de Michelle con estados
@@ -1245,65 +1224,6 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 		std::cout << "[BUSTO] Animacion reseteada" << std::endl;
 	}
 
-	//To Configure Model
-	if (glfwGetKey(window, GLFW_KEY_Y) == GLFW_PRESS)
-		posZ++;
-	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
-		posZ--;
-	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
-		posX--;
-	if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
-		posX++;
-	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
-		rotRodIzq--;
-	if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS)
-		rotRodIzq++;
-	if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS)
-		giroMonito--;
-	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS)
-		giroMonito++;
-	if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS)
-		lightPosition.y++;
-	if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS)
-		lightPosition.y--;
-	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
-		giro++;
-	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
-		giro--;
-
-	//Car animation
-	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-		animacion ^= true;
-
-	//To play KeyFrame animation 
-	if (key == GLFW_KEY_P && action == GLFW_PRESS)
-	{
-		if (play == false && (FrameIndex > 1))
-		{
-			std::cout << "Play animation" << std::endl;
-			resetElements();
-			//First Interpolation				
-			interpolation();
-
-			play = true;
-			playIndex = 0;
-			i_curr_steps = 0;
-		}
-		else
-		{
-			play = false;
-			std::cout << "Not enough Key Frames" << std::endl;
-		}
-	}
-
-	//To Save a KeyFrame
-	if (key == GLFW_KEY_L && action == GLFW_PRESS)
-	{
-		if (FrameIndex < MAX_FRAMES)
-		{
-			saveFrame();
-		}
-	}
 
 }
 
