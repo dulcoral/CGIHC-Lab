@@ -13,10 +13,15 @@
  * - Scroll: Zoom
  * 
  * VISTAS PREDEFINIDAS:
- * - E (Exterior): Vista exterior del museo + reproducir audio ambiental
- * - I (Interior): Vista interior del museo + detener audio
+ * - E (Exterior): Vista exterior del museo + sonido de ciudad
+ * - I (Interior): Vista interior del museo + música del museo
  * - Z (Zoom): Vista de zoom a los modelos principales
  * - P (Print): Imprimir posición actual de la cámara (útil para debug)
+ * 
+ * AUDIO:
+ * - La música del museo se reproduce automáticamente al inicio (museo_music.mp3)
+ * - Use E para cambiar a sonido de ciudad (sonido_ciudad.mp3)
+ * - Use I para cambiar a música del museo (museo_music.mp3)
  * 
  * ANIMACIONES:
  * - 1: Iniciar animación del busto
@@ -186,16 +191,32 @@ enum MichelleState {
 	TURNING_FINAL
 };
 
+// ============================================================================
+// CONSTANTES DE ANIMACIÓN
+// ============================================================================
+// Michelle - Constantes
+constexpr float MICHELLE_SPEED = 2.0f;
+constexpr float MICHELLE_RANGE_MAX = 650.0f;
+constexpr float MICHELLE_WALK_DISTANCE = 200.0f;
+constexpr float MICHELLE_FINAL_WALK = 100.0f;
+constexpr float MICHELLE_ROTATION_SPEED = 2.0f;
+constexpr float MICHELLE_INITIAL_ROTATION = 70.0f;
+
+// Perro - Constantes
+constexpr float PERRO_ANIM_SPEED = 1.0f;
+constexpr float PERRO_PATA_MAX = 3.5f;
+constexpr float PERRO_MOV_SPEED = 1.5f;
+constexpr float PERRO_MOV_RANGE = 600.0f;
+constexpr float PERRO_INITIAL_ROTATION = -20.0f;
+
+// ============================================================================
+// VARIABLES DE ESTADO DE ANIMACIÓN
+// ============================================================================
 // Variables de posición y animación de Michelle
 float michelleMovX = 0.0f;
 float michelleMovZ = 0.0f;
-float michelleRotation = 70.0f;
-float michelleSpeed = 2.0f;
-float michelleRangeMax = 650.0f;
-float michelleWalkDistance = 200.0f;
-float michelleFinalWalk = 100.0f;
+float michelleRotation = MICHELLE_INITIAL_ROTATION;
 float michelleFinalCounter = 0.0f;
-float michelleRotationSpeed = 2.0f;
 MichelleState michelleState = WALKING_RIGHT;
 bool animateMichelle = true;
 
@@ -206,15 +227,11 @@ float perroPataIzqDelantera = 0.0f;
 float perroPataIzqTrasera = 0.0f;
 float perroCola = 0.0f;
 float perroMovX = 0.0f;
-float perroAnimSpeed = 1.0f;
-float perroPataMagMax = 3.5f;
-float perroMovSpeed = 1.5f;
-float perroMovRange = 600.0f;
 bool perroAnimDirection = true;
 bool perroMovDirection = true;
-float perroRotacion = -20.0f;
+float perroRotacion = PERRO_INITIAL_ROTATION;
 bool perroGirando = false;
-float perroRotacionObjetivo = -20.0f;
+float perroRotacionObjetivo = PERRO_INITIAL_ROTATION;
 
 struct DroneAnimation {
 	float currentAngle;
@@ -280,20 +297,21 @@ BustoAnimation bustoAnim;
 // ============================================================================
 struct AudioSystem {
 	MIX_Mixer* mixer;
-	MIX_Audio* backgroundMusic;
+	MIX_Audio* museoMusic;     // Música del museo (interior)
+	MIX_Audio* ciudadSound;    // Sonido de ciudad (exterior)
 	MIX_Track* track;
 	bool initialized;
-	bool isPlaying;
 	float volume;
 	
-	AudioSystem() : mixer(nullptr), backgroundMusic(nullptr), track(nullptr),
-			        initialized(false), isPlaying(false), volume(0.5f) {}
+	AudioSystem() : mixer(nullptr), museoMusic(nullptr), ciudadSound(nullptr), 
+	                track(nullptr), initialized(false), volume(0.5f) {}
 };
 
 AudioSystem audioSystem;
 
-// Ruta archivo de audio
-const char* audioFile = "resources/audio/sonido_ciudad.mp3";
+// Rutas de archivos de audio
+const char* museoMusicFile = "resources/audio/museo_music.mp3";
+const char* ciudadSoundFile = "resources/audio/sonido_ciudad.mp3";
 
 unsigned int generateTextures(const char* filename, bool alfa, bool isPrimitive)
 {
@@ -323,6 +341,7 @@ unsigned int generateTextures(const char* filename, bool alfa, bool isPrimitive)
 		else
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
+		stbi_image_free(data);  // Liberar memoria antes de retornar
 		return textureID;
 	}
 	else
@@ -330,8 +349,6 @@ unsigned int generateTextures(const char* filename, bool alfa, bool isPrimitive)
 		std::cout << "Failed to load texture" << std::endl;
 		return 100;
 	}
-
-	stbi_image_free(data);
 }
 
 void LoadTextures()
@@ -407,21 +424,34 @@ void InitAudio() {
 	}
 	std::cout << "[OK] Mixer de audio creado" << std::endl;
 	
-	audioSystem.backgroundMusic = MIX_LoadAudio(audioSystem.mixer, audioFile, false);
-	
-	if (!audioSystem.backgroundMusic) {
-		std::cout << "[WARN] No se pudo cargar el audio: " << audioFile << std::endl;
+	// Cargar música del museo
+	audioSystem.museoMusic = MIX_LoadAudio(audioSystem.mixer, museoMusicFile, false);
+	if (!audioSystem.museoMusic) {
+		std::cout << "[WARN] No se pudo cargar la música del museo: " << museoMusicFile << std::endl;
 		std::cout << "       Error: " << SDL_GetError() << std::endl;
-		std::cerr << "\n[ERROR] No se cargó el audio" << std::endl;
-		std::cerr << "Verifique que exista el archivo MP3 en resources/audio/" << std::endl;
+	} else {
+		std::cout << "[OK] Música del museo cargada: " << museoMusicFile << std::endl;
+	}
+	
+	// Cargar sonido de ciudad
+	audioSystem.ciudadSound = MIX_LoadAudio(audioSystem.mixer, ciudadSoundFile, false);
+	if (!audioSystem.ciudadSound) {
+		std::cout << "[WARN] No se pudo cargar el sonido de ciudad: " << ciudadSoundFile << std::endl;
+		std::cout << "       Error: " << SDL_GetError() << std::endl;
+	} else {
+		std::cout << "[OK] Sonido de ciudad cargado: " << ciudadSoundFile << std::endl;
+	}
+	
+	// Verificar que al menos uno se haya cargado
+	if (!audioSystem.museoMusic && !audioSystem.ciudadSound) {
+		std::cerr << "\n[ERROR] No se pudieron cargar los archivos de audio" << std::endl;
+		std::cerr << "Verifique que existan los archivos MP3 en resources/audio/" << std::endl;
 		MIX_DestroyMixer(audioSystem.mixer);
 		audioSystem.mixer = nullptr;
 		MIX_Quit();
 		SDL_QuitSubSystem(SDL_INIT_AUDIO);
 		return;
 	}
-	
-	std::cout << "[OK] Audio cargado: " << audioFile << std::endl;
 	
 	audioSystem.track = MIX_CreateTrack(audioSystem.mixer);
 	if (!audioSystem.track) {
@@ -442,51 +472,68 @@ void InitAudio() {
 }
 
 // ============================================================================
-// PlayAudioTrack - Reproduce el audio de fondo
+// PlayAudio - Función auxiliar genérica para reproducir audio
 // Parámetros:
+//   - audio: Puntero al audio a reproducir
+//   - audioName: Nombre descriptivo del audio (para logs)
 //   - loops: Número de repeticiones (-1 = infinito, 0 = una vez)
 // ============================================================================
-void PlayAudioTrack(int loops = -1) {
+static bool PlayAudio(MIX_Audio* audio, const char* audioName, int loops = -1) {
 	if (!audioSystem.initialized) {
 		std::cout << "[AUDIO] Sistema de audio no inicializado" << std::endl;
-		return;
+		return false;
 	}
 	
-	if (!audioSystem.backgroundMusic || !audioSystem.track) {
-		std::cout << "[AUDIO] Audio no disponible" << std::endl;
-		return;
+	if (!audio || !audioSystem.track) {
+		std::cout << "[AUDIO] " << audioName << " no disponible" << std::endl;
+		return false;
 	}
 	
+	// Detener audio actual si está reproduciendo
 	if (MIX_TrackPlaying(audioSystem.track)) {
 		MIX_StopTrack(audioSystem.track, 0);
 	}
 	
-	MIX_SetTrackAudio(audioSystem.track, audioSystem.backgroundMusic);
+	// Configurar el audio en el track
+	MIX_SetTrackAudio(audioSystem.track, audio);
 	
 	// Crear propiedades para la reproducción
 	SDL_PropertiesID props = SDL_CreateProperties();
-	if (loops == -1) {
-		SDL_SetNumberProperty(props, "SDL_mixer.loop.count", MIX_DURATION_INFINITE);
-	} else {
-		SDL_SetNumberProperty(props, "SDL_mixer.loop.count", loops);
-	}
+	SDL_SetNumberProperty(props, "SDL_mixer.loop.count", 
+	                      loops == -1 ? MIX_DURATION_INFINITE : loops);
 	
 	// Reproducir audio
-	if (!MIX_PlayTrack(audioSystem.track, props)) {
-		std::cerr << "[AUDIO] Error al reproducir audio" << std::endl;
+	bool success = MIX_PlayTrack(audioSystem.track, props);
+	SDL_DestroyProperties(props);  // Liberar propiedades siempre
+	
+	if (!success) {
+		std::cerr << "[AUDIO] Error al reproducir " << audioName << std::endl;
 		std::cerr << "        Error: " << SDL_GetError() << std::endl;
-		SDL_DestroyProperties(props);  // Liberar propiedades en caso de error
-		return;
+		return false;
 	}
-
 	
-	audioSystem.isPlaying = true;
-	
-	std::cout << "[AUDIO] Reproduciendo audio de ambiente urbano" 
-			  << (loops == -1 ? " (loop infinito)" : "") << std::endl;
+	std::cout << "[AUDIO] Reproduciendo " << audioName 
+	          << (loops == -1 ? " (loop infinito)" : "") << std::endl;
+	return true;
 }
 
-// Detiene la reproducción actual
+// ============================================================================
+// PlayMuseoMusic - Reproduce la música del museo
+// ============================================================================
+void PlayMuseoMusic(int loops = -1) {
+	PlayAudio(audioSystem.museoMusic, "música del museo", loops);
+}
+
+// ============================================================================
+// PlayCiudadSound - Reproduce el sonido de la ciudad
+// ============================================================================
+void PlayCiudadSound(int loops = -1) {
+	PlayAudio(audioSystem.ciudadSound, "sonido de ciudad", loops);
+}
+
+// ============================================================================
+// StopAudio - Detiene la reproducción actual
+// ============================================================================
 void StopAudio() {
 	if (!audioSystem.initialized || !audioSystem.track) {
 		return;
@@ -494,7 +541,6 @@ void StopAudio() {
 	
 	if (MIX_TrackPlaying(audioSystem.track)) {
 		MIX_StopTrack(audioSystem.track, 0);  // 0 = sin fade out
-		audioSystem.isPlaying = false;
 		std::cout << "[AUDIO] Reproducción detenida" << std::endl;
 	}
 }
@@ -515,9 +561,14 @@ void CleanupAudio() {
 		audioSystem.track = nullptr;
 	}
 	
-	if (audioSystem.backgroundMusic) {
-		audioSystem.backgroundMusic = nullptr;
-		std::cout << "[OK] Audio liberado" << std::endl;
+	if (audioSystem.museoMusic) {
+		audioSystem.museoMusic = nullptr;
+		std::cout << "[OK] Música del museo liberada" << std::endl;
+	}
+	
+	if (audioSystem.ciudadSound) {
+		audioSystem.ciudadSound = nullptr;
+		std::cout << "[OK] Sonido de ciudad liberado" << std::endl;
 	}
 	
 	if (audioSystem.mixer) {
@@ -540,14 +591,14 @@ void CleanupAudio() {
 // Funciones auxiliares para simplificar la animación de Michelle
 inline bool updateMichelleRotation(float targetAngle, MichelleState nextState, bool clockwise) {
 	if (clockwise) {
-		michelleRotation += michelleRotationSpeed;
+		michelleRotation += MICHELLE_ROTATION_SPEED;
 		if (michelleRotation >= targetAngle) {
 			michelleRotation = targetAngle;
 			michelleState = nextState;
 			return true;
 		}
 	} else {
-		michelleRotation -= michelleRotationSpeed;
+		michelleRotation -= MICHELLE_ROTATION_SPEED;
 		if (michelleRotation <= targetAngle) {
 			michelleRotation = targetAngle;
 			michelleState = nextState;
@@ -575,7 +626,7 @@ void animate(void)
 		switch (michelleState)
 		{
 		case WALKING_RIGHT:
-			updateMichelleMovement(michelleMovX, michelleSpeed, michelleRangeMax, TURNING_1);
+			updateMichelleMovement(michelleMovX, MICHELLE_SPEED, MICHELLE_RANGE_MAX, TURNING_1);
 			break;
 			
 		case TURNING_1:
@@ -584,7 +635,7 @@ void animate(void)
 			break;
 			
 		case WALKING_FORWARD:
-			updateMichelleMovement(michelleMovZ, -michelleSpeed, -michelleWalkDistance, TURNING_2);
+			updateMichelleMovement(michelleMovZ, -MICHELLE_SPEED, -MICHELLE_WALK_DISTANCE, TURNING_2);
 			break;
 			
 		case TURNING_2:
@@ -593,23 +644,23 @@ void animate(void)
 			break;
 		
 		case WALKING_FINAL:
-			michelleMovX -= michelleSpeed;
-			michelleFinalCounter += michelleSpeed;
-			if (michelleFinalCounter >= michelleFinalWalk)
+			michelleMovX -= MICHELLE_SPEED;
+			michelleFinalCounter += MICHELLE_SPEED;
+			if (michelleFinalCounter >= MICHELLE_FINAL_WALK)
 				michelleState = TURNING_180;
 			break;
 		
 		case TURNING_180:
 			if (updateMichelleRotation(430.0f, WALKING_BACK_1, true)) {
-				michelleRotation = 70.0f;
+				michelleRotation = MICHELLE_INITIAL_ROTATION;
 				michelleFinalCounter = 0.0f;
 			}
 			break;
 		
 		case WALKING_BACK_1:
-			michelleMovX += michelleSpeed;
-			michelleFinalCounter += michelleSpeed;
-			if (michelleFinalCounter >= michelleFinalWalk)
+			michelleMovX += MICHELLE_SPEED;
+			michelleFinalCounter += MICHELLE_SPEED;
+			if (michelleFinalCounter >= MICHELLE_FINAL_WALK)
 				michelleState = TURNING_BACK_1;
 			break;
 		
@@ -619,7 +670,7 @@ void animate(void)
 			break;
 		
 		case WALKING_BACK_2:
-			updateMichelleMovement(michelleMovZ, michelleSpeed, 0.0f, TURNING_BACK_2);
+			updateMichelleMovement(michelleMovZ, MICHELLE_SPEED, 0.0f, TURNING_BACK_2);
 			break;
 		
 		case TURNING_BACK_2:
@@ -627,12 +678,12 @@ void animate(void)
 			break;
 		
 		case WALKING_LEFT:
-			updateMichelleMovement(michelleMovX, -michelleSpeed, 0.0f, TURNING_FINAL);
+			updateMichelleMovement(michelleMovX, -MICHELLE_SPEED, 0.0f, TURNING_FINAL);
 			break;
 		
 		case TURNING_FINAL:
 			if (updateMichelleRotation(430.0f, WALKING_RIGHT, true))
-				michelleRotation = 70.0f;
+				michelleRotation = MICHELLE_INITIAL_ROTATION;
 			break;
 		}
 	}
@@ -642,38 +693,38 @@ void animate(void)
 	
 	// Animación del perro
 	if (perroAnimDirection) {
-		perroPataDerDelantera += perroAnimSpeed;
-		perroPataDerTrasera -= perroAnimSpeed;
-		perroPataIzqDelantera -= perroAnimSpeed;
-		perroPataIzqTrasera += perroAnimSpeed;
-		perroCola += perroAnimSpeed;
+		perroPataDerDelantera += PERRO_ANIM_SPEED;
+		perroPataDerTrasera -= PERRO_ANIM_SPEED;
+		perroPataIzqDelantera -= PERRO_ANIM_SPEED;
+		perroPataIzqTrasera += PERRO_ANIM_SPEED;
+		perroCola += PERRO_ANIM_SPEED;
 		
-		if (perroPataDerDelantera >= perroPataMagMax) {
+		if (perroPataDerDelantera >= PERRO_PATA_MAX) {
 			perroAnimDirection = false;
 		}
 	} else {
-		perroPataDerDelantera -= perroAnimSpeed;
-		perroPataDerTrasera += perroAnimSpeed;
-		perroPataIzqDelantera += perroAnimSpeed;
-		perroPataIzqTrasera -= perroAnimSpeed;
-		perroCola -= perroAnimSpeed;
+		perroPataDerDelantera -= PERRO_ANIM_SPEED;
+		perroPataDerTrasera += PERRO_ANIM_SPEED;
+		perroPataIzqDelantera += PERRO_ANIM_SPEED;
+		perroPataIzqTrasera -= PERRO_ANIM_SPEED;
+		perroCola -= PERRO_ANIM_SPEED;
 		
-		if (perroPataDerDelantera <= -perroPataMagMax) {
+		if (perroPataDerDelantera <= -PERRO_PATA_MAX) {
 			perroAnimDirection = true;
 		}
 	}
 	
 	// Movimiento de lado a lado
+	constexpr float PERRO_VELOCIDAD_GIRO = 3.0f;
 	if (perroGirando) {
-		float velocidadGiro = 3.0f;
 		if (perroRotacion < perroRotacionObjetivo) {
-			perroRotacion += velocidadGiro;
+			perroRotacion += PERRO_VELOCIDAD_GIRO;
 			if (perroRotacion >= perroRotacionObjetivo) {
 				perroRotacion = perroRotacionObjetivo;
 				perroGirando = false;
 			}
 		} else {
-			perroRotacion -= velocidadGiro;
+			perroRotacion -= PERRO_VELOCIDAD_GIRO;
 			if (perroRotacion <= perroRotacionObjetivo) {
 				perroRotacion = perroRotacionObjetivo;
 				perroGirando = false;
@@ -681,14 +732,14 @@ void animate(void)
 		}
 	} else {
 		if (perroMovDirection) {
-			perroMovX -= perroMovSpeed;
-			if (perroMovX <= -perroMovRange) {
+			perroMovX -= PERRO_MOV_SPEED;
+			if (perroMovX <= -PERRO_MOV_RANGE) {
 				perroGirando = true;
 				perroRotacionObjetivo = perroRotacion + 180.0f;
 				perroMovDirection = false;
 			}
 		} else {
-			perroMovX += perroMovSpeed;
+			perroMovX += PERRO_MOV_SPEED;
 			if (perroMovX >= 0.0f) {
 				perroGirando = true;
 				perroRotacionObjetivo = perroRotacion + 180.0f;
@@ -918,6 +969,7 @@ int main() {
 	// ============================================================================
 	LoadTextures();
 	InitAudio();
+	
 	myData();
 	glEnable(GL_DEPTH_TEST);
 
@@ -979,6 +1031,11 @@ int main() {
 	glm::mat4 modelOp = glm::mat4(1.0f);
 	glm::mat4 viewOp = glm::mat4(1.0f);
 	glm::mat4 projectionOp = glm::mat4(1.0f);
+
+	// ============================================================================
+	// Iniciar música del museo
+	// ============================================================================
+	PlayMuseoMusic(-1);
 
 	// ============================================================================
 	// RENDER LOOP
@@ -1147,7 +1204,7 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 	// ========================================================================
 	// SISTEMA DE AUDIO Y CÁMARA - Control por teclado
 	// ========================================================================
-	// Tecla E (Exterior) - Vista exterior del museo y reproducir audio
+	// Tecla E (Exterior) - Vista exterior del museo y reproducir sonido de ciudad
 	if (key == GLFW_KEY_E && action == GLFW_PRESS)
 	{
 		glm::vec3 newPos = glm::vec3(-3000.0f, 0.0f, -1000.0f);
@@ -1161,11 +1218,11 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 		camera.Yaw = glm::degrees(atan2(camera.Front.z, camera.Front.x));
 		camera.Pitch = glm::degrees(asin(camera.Front.y));
 		
-		PlayAudioTrack(-1);  // Loop infinito
-		std::cout << "[CAMARA] Vista exterior del museo" << std::endl;
+		PlayCiudadSound(-1);  // Loop infinito
+		std::cout << "[CAMARA] Vista exterior del museo - Sonido de ciudad" << std::endl;
 	}
 
-	// Tecla I (Interior) - Vista interior y detener audio
+	// Tecla I (Interior) - Vista interior y reproducir música del museo
 	if (key == GLFW_KEY_I && action == GLFW_PRESS)
 	{
 		camera.Position = glm::vec3(0.0f, 200.0f, 800.0f);
@@ -1180,8 +1237,8 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 		camera.Right = glm::normalize(glm::cross(camera.Front, camera.WorldUp));
 		camera.Up = glm::normalize(glm::cross(camera.Right, camera.Front));
 		
-		StopAudio();
-		std::cout << "[CAMARA] Vista interior del museo" << std::endl;
+		PlayMuseoMusic(-1);  // Loop infinito
+		std::cout << "[CAMARA] Vista interior del museo - Música del museo" << std::endl;
 	}
 
 	// Tecla Z (Zoom) - Vista de zoom a los modelos
