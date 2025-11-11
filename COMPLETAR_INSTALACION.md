@@ -1,27 +1,23 @@
-# 🔐 Completar Instalación
+# Completar Instalación de Audio
 
-**SDL3 se compiló exitosamente (100%)** pero necesita instalarse con permisos de administrador.
+Guía para completar la instalación de SDL3 en Mac.
 
----
+## Paso 1: Instalar SDL3
 
-## 🚀 Pasos para Completar
-
-### Paso 1: Instalar SDL3 (requiere contraseña)
-
-Abre tu terminal y ejecuta:
+Primero instalar SDL3.
 
 ```bash
 cd ~/Downloads/SDL_instalacion_completa/SDL/build
 sudo make install
 ```
 
-Te pedirá tu contraseña de administrador.
+**Nota:** Poner contraseña de Mac
 
 ---
 
-### Paso 2: Continuar con SDL3_mixer
+## Paso 2: Instalar SDL3_mixer
 
-Una vez que SDL3 esté instalado, ejecuta:
+Usar los siguientes comandos para instalar la librería de audio:
 
 ```bash
 cd ~/Downloads/SDL_instalacion_completa
@@ -35,14 +31,12 @@ sudo make install
 
 ---
 
-## ✅ Verificación
-
-Después de instalar ambos, verifica:
+## ✅ Verificar
 
 ```bash
 # Verificar SDL3
 pkg-config --modversion sdl3
-# Debe mostrar 3.3.x o superior
+# 3.3.x o superior
 
 # Verificar SDL3_mixer
 ls /opt/homebrew/lib/libSDL3_mixer*
@@ -51,7 +45,7 @@ ls /opt/homebrew/include/SDL3/SDL_mixer.h
 
 ---
 
-## 🎯 Compilar tu Proyecto
+## 🎯 Compilar el Proyecto
 
 Una vez todo instalado:
 
