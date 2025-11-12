@@ -16,14 +16,15 @@
  * - E (Exterior): Vista exterior del museo + sonido de ciudad
  * - I (Interior): Vista interior del museo + música del museo
  * - Z (Zoom): Vista de zoom a los modelos principales
- * - P (Print): Imprimir posición actual de la cámara (útil para debug)
+ * - P (Print): Imprimir posición actual de la cámara
  * 
  * AUDIO:
  * - La música del museo se reproduce automáticamente al inicio (museo_music.mp3)
  * - Use E para cambiar a sonido de ciudad (sonido_ciudad.mp3)
  * - Use I para cambiar a música del museo (museo_music.mp3)
  * 
- * ANIMACIONES:
+ * ANIMACIONES Y EFECTOS ESPECIALES:
+ * - 0: Tridente volador
  * - 1: Iniciar animación del busto
  * - 2: Pausar animación del busto
  * - 3: Resetear animación del busto
@@ -35,9 +36,10 @@
  * - Drone: Animación aérea en movimiento
  * - Busto de Nefertiti: Con animación por keyframes
  * - David: Escultura clásica
- * - Reliquia: Objeto arqueológico
+ * - Reliquia: Objeto arqueológico giratorio con saltitos
  * - Totem: Escultura tribal
  * - Estatua (Old Man): Figura humana
+ * - Escultura (Shiva): Con tridente interactivo
  * - Perro: Modelo articulado con animación
  * - Michelle: Personaje animado caminando
  * - Joe: Personaje animado estático
@@ -61,9 +63,8 @@
 
 #define SDL_MAIN_HANDLED
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_audio.h>  // Para SDL_AUDIO_DEVICE_DEFAULT_OUTPUT
+#include <SDL3/SDL_audio.h>
 #include <SDL3_mixer/SDL_mixer.h>
-
 
 #include <shader_m.h>
 #include <camera.h>
@@ -71,14 +72,10 @@
 #include <model.h>
 #include <Skybox.h>
 #include <iostream>
-// STL
 #include <vector>
 #include <string>
-#include <cstring>  // Para strlen
-#include <cmath>     // Para cos, sin
-// #include <mmsystem.h>
-
-
+#include <cstring>
+#include <cmath>
 
 struct DroneAnimation;
 struct BustoAnimation;
@@ -126,10 +123,44 @@ void renderdavid(Model& davidModel, Shader& shader);
 void renderReliquia(Model& reliquiaModel, Shader& shader);
 void renderTotem(Model& totemModel, Shader& shader);
 void renderEstatua(Model& estatuaModel, Shader& shader);
+void renderEscultura(Model& base, Model& tridente, Model& adorno, Shader& shader);
 
 // Función de renderizado del Perro (modelo articulado)
 void renderPerro(Model& cuerpo, Model& cola, Model& pataDerDel, Model& pataIzqDel, 
 			     Model& pataDerTra, Model& pataIzqTra, Shader& shader);
+
+// Helper para configurar point lights
+void setupPointLight(Shader& shader, int index, const glm::vec3& position, 
+                     const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular,
+                     float constant, float linear, float quadratic)
+{
+	std::string base = "pointLight[" + std::to_string(index) + "].";
+	shader.setVec3(base + "position", position);
+	shader.setVec3(base + "ambient", ambient);
+	shader.setVec3(base + "diffuse", diffuse);
+	shader.setVec3(base + "specular", specular);
+	shader.setFloat(base + "constant", constant);
+	shader.setFloat(base + "linear", linear);
+	shader.setFloat(base + "quadratic", quadratic);
+}
+
+// Helper para configurar spot light (linterna de la cámara)
+void setupSpotLight(Shader& shader, int index, const glm::vec3& position, const glm::vec3& direction,
+                    const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular,
+                    float cutOff, float outerCutOff, float constant, float linear, float quadratic)
+{
+	std::string base = "spotLight[" + std::to_string(index) + "].";
+	shader.setVec3(base + "position", position);
+	shader.setVec3(base + "direction", direction);
+	shader.setVec3(base + "ambient", ambient);
+	shader.setVec3(base + "diffuse", diffuse);
+	shader.setVec3(base + "specular", specular);
+	shader.setFloat(base + "cutOff", cutOff);
+	shader.setFloat(base + "outerCutOff", outerCutOff);
+	shader.setFloat(base + "constant", constant);
+	shader.setFloat(base + "linear", linear);
+	shader.setFloat(base + "quadratic", quadratic);
+}
 
 // GLFW error callback to diagnose initialization issues on macOS
 static void glfw_error_callback(int error, const char* description)
@@ -214,9 +245,14 @@ constexpr float RELIQUIA_ROTATION_SPEED = 1.5f;  // Velocidad media de rotación
 constexpr float RELIQUIA_BOUNCE_SPEED = 3.0f;    // Velocidad de saltitos (más rápida)
 constexpr float RELIQUIA_BOUNCE_HEIGHT = 15.0f;  // Altura máxima del saltito (más notorio)
 
+// Tridente - Constantes de animación de vuelo
+constexpr float TRIDENTE_FLIGHT_SPEED = 0.02f;  // Velocidad del vuelo (0.0 a 1.0 por frame)
+
 // ============================================================================
 // VARIABLES DE ESTADO DE ANIMACIÓN
 // ============================================================================
+
+
 // Variables de posición y animación de Michelle
 float michelleMovX = 0.0f;
 float michelleMovZ = 0.0f;
@@ -241,6 +277,13 @@ float perroRotacionObjetivo = PERRO_INITIAL_ROTATION;
 // Variables de animación de la reliquia
 float reliquiaRotation = 0.0f;
 float reliquiaBounceAngle = 0.0f;  // Ángulo para controlar el movimiento sinusoidal del salto
+
+// Variables de control del tridente (escultura)
+bool tridenteEnPosicionInicial = true;     // true = lejos, false = con la escultura
+bool tridenteVolando = false;              // true cuando está animándose
+float tridenteFlightProgress = 0.0f;       // 0.0 = inicio, 1.0 = destino
+glm::vec3 tridentePosicionActual = glm::vec3(-660.0f, 145.0f, -730.0f);  // Posición actual interpolada
+float tridenteRotacionActual = 0.0f;       // Rotación actual durante el vuelo
 
 struct DroneAnimation {
 	float currentAngle;
@@ -769,6 +812,45 @@ void animate(void)
 	if (reliquiaBounceAngle >= 360.0f) {
 		reliquiaBounceAngle -= 360.0f;
 	}
+	
+	// Animación de vuelo del tridente
+	if (tridenteVolando) {
+		// Incrementar progreso del vuelo
+		tridenteFlightProgress += TRIDENTE_FLIGHT_SPEED;
+		
+		// Posiciones de inicio y destino
+		glm::vec3 posicionLejos = glm::vec3(-660.0f, 145.0f, -730.0f);
+		glm::vec3 posicionCerca = glm::vec3(-700.0f, 150.0f, -360.0f);
+		
+		// Determinar dirección del vuelo
+		glm::vec3 posInicio, posFin;
+		if (tridenteEnPosicionInicial) {
+			// Volando de cerca a lejos
+			posInicio = posicionCerca;
+			posFin = posicionLejos;
+		} else {
+			// Volando de lejos a cerca
+			posInicio = posicionLejos;
+			posFin = posicionCerca;
+		}
+		
+		// Interpolación lineal de la posición (lerp)
+		float t = tridenteFlightProgress;
+		tridentePosicionActual = posInicio + (posFin - posInicio) * t;
+		
+		// Rotación durante el vuelo (90° en la mitad del trayecto)
+		// Usar una curva sinusoidal para hacer la rotación más suave
+		tridenteRotacionActual = sin(t * 3.14159f) * 90.0f;
+		
+		// Verificar si llegó al destino
+		if (tridenteFlightProgress >= 1.0f) {
+			tridenteVolando = false;
+			tridenteFlightProgress = 1.0f;
+			tridentePosicionActual = posFin;
+			tridenteRotacionActual = 0.0f;
+			std::cout << "[TRIDENTE] ¡Llegó a su destino!" << std::endl;
+		}
+	}
 }
 
 void getResolution() {
@@ -1027,6 +1109,11 @@ int main() {
 	Model totem("resources/objects/Totem/totem.obj");
 	Model estatua("resources/objects/Estatua/old_man.obj");
 	
+	// Shiva con tridente
+	Model esculturaBase("resources/objects/Escultura/escultura.obj");
+	Model esculturaTridente("resources/objects/Escultura/tridente.obj");
+	Model esculturaAdorno("resources/objects/Escultura/adorno.obj");
+	
 	// Perro - todas las partes
 	Model perroCuerpo("resources/objects/Perro/cuerpo.obj");
 	Model perroCola("resources/objects/Perro/cola.obj");
@@ -1091,40 +1178,46 @@ int main() {
 		staticShader.setVec3("dirLight.diffuse", glm::vec3(0.4f, 0.4f, 0.4f));
 		staticShader.setVec3("dirLight.specular", glm::vec3(0.0f, 0.0f, 0.0f));
 
-		staticShader.setVec3("pointLight[0].position", glm::vec3(70.0f, 25.0f, 0.0f));
-		staticShader.setVec3("pointLight[0].ambient", glm::vec3(0.1f, 0.1f, 0.1f));
-		staticShader.setVec3("pointLight[0].diffuse", glm::vec3(0.8f, 0.8f, 0.8f));
-		staticShader.setVec3("pointLight[0].specular", glm::vec3(1.0f, 1.0f, 1.0f));
-		staticShader.setFloat("pointLight[0].constant", 0.08f);
-		staticShader.setFloat("pointLight[0].linear", 0.009f);
-		staticShader.setFloat("pointLight[0].quadratic", 0.00032f);
+		// Luz principal (general)
+		setupPointLight(staticShader, 0, 
+			glm::vec3(70.0f, 25.0f, 0.0f),
+			glm::vec3(0.1f, 0.1f, 0.1f),
+			glm::vec3(0.8f, 0.8f, 0.8f),
+			glm::vec3(1.0f, 1.0f, 1.0f),
+			0.08f, 0.009f, 0.00032f);
 
-		staticShader.setVec3("pointLight[1].position", glm::vec3(-80.0, 20.0f, 0.0f));
-		staticShader.setVec3("pointLight[1].ambient", glm::vec3(0.0f, 0.0f, 0.0f));
-		staticShader.setVec3("pointLight[1].diffuse", glm::vec3(0.0f, 0.0f, 0.0f));
-		staticShader.setVec3("pointLight[1].specular", glm::vec3(0.0f, 0.0f, 0.0f));
-		staticShader.setFloat("pointLight[1].constant", 1.0f);
-		staticShader.setFloat("pointLight[1].linear", 0.009f);
-		staticShader.setFloat("pointLight[1].quadratic", 0.032f);
+	// Luz tipo sol para zona de esculturas (reliquia, totem, estatua, escultura)
+	setupPointLight(staticShader, 1,
+		glm::vec3(-820.0f, 300.0f, -600.0f),
+		glm::vec3(0.3f, 0.3f, 0.3f),
+		glm::vec3(1.2f, 1.2f, 1.0f),
+		glm::vec3(1.0f, 1.0f, 0.9f),
+		1.0f, 0.003f, 0.00008f);
 
-		staticShader.setVec3("pointLight[2].position", glm::vec3(-80.0, 20.0f, 0.0f));
-		staticShader.setVec3("pointLight[2].ambient", glm::vec3(0.0f, 0.0f, 0.0f));
-		staticShader.setVec3("pointLight[2].diffuse", glm::vec3(0.0f, 0.0f, 0.0f));
-		staticShader.setVec3("pointLight[2].specular", glm::vec3(0.0f, 0.0f, 0.0f));
-		staticShader.setFloat("pointLight[2].constant", 1.0f);
-		staticShader.setFloat("pointLight[2].linear", 0.009f);
-		staticShader.setFloat("pointLight[2].quadratic", 0.032f);
+	// Luz dorada intensa en posición inicial del tridente
+	setupPointLight(staticShader, 2,
+		glm::vec3(-660.0f, 180.0f, -730.0f),
+		glm::vec3(0.4f, 0.3f, 0.1f),
+		glm::vec3(2.0f, 1.6f, 0.4f),
+		glm::vec3(2.0f, 1.8f, 0.8f),
+		1.0f, 0.009f, 0.0003f);
 
-		staticShader.setVec3("spotLight[0].position", glm::vec3(camera.Position.x, camera.Position.y, camera.Position.z));
-		staticShader.setVec3("spotLight[0].direction", glm::vec3(camera.Front.x, camera.Front.y, camera.Front.z));
-		staticShader.setVec3("spotLight[0].ambient", glm::vec3(0.1f, 0.1f, 0.1f));
-		staticShader.setVec3("spotLight[0].diffuse", glm::vec3(1.0f, 1.0f, 1.0f));
-		staticShader.setVec3("spotLight[0].specular", glm::vec3(1.0f, 1.0f, 1.0f));
-		staticShader.setFloat("spotLight[0].cutOff", glm::cos(glm::radians(10.0f)));
-		staticShader.setFloat("spotLight[0].outerCutOff", glm::cos(glm::radians(15.0f)));
-		staticShader.setFloat("spotLight[0].constant", 1.0f);
-		staticShader.setFloat("spotLight[0].linear", 0.0014f);
-		staticShader.setFloat("spotLight[0].quadratic", 0.000007f);
+	// Luz NARANJA ROJIZA intensa para el adorno (más potente y distintiva)
+	setupPointLight(staticShader, 3,
+		glm::vec3(-690.0f, 260.0f, -358.0f),
+		glm::vec3(0.5f, 0.2f, 0.05f),
+		glm::vec3(3.5f, 1.2f, 0.3f),
+		glm::vec3(3.0f, 1.5f, 0.5f),
+		1.0f, 0.009f, 0.0003f);
+
+	// Linterna de la cámara (spotLight)
+	setupSpotLight(staticShader, 0,
+		camera.Position, camera.Front,
+		glm::vec3(0.1f, 0.1f, 0.1f),
+		glm::vec3(1.0f, 1.0f, 1.0f),
+		glm::vec3(1.0f, 1.0f, 1.0f),
+		glm::cos(glm::radians(10.0f)), glm::cos(glm::radians(15.0f)),
+		1.0f, 0.0014f, 0.000007f);
 
 		staticShader.setFloat("material_shininess", 32.0f);
 
@@ -1134,68 +1227,64 @@ int main() {
 		staticShader.setMat4("projection", projectionOp);
 		staticShader.setMat4("view", viewOp);
 
-		// Setup shader for primitives (si se necesita en el futuro)
+		// Setup shader for primitives
 		myShader.use();
 		myShader.setMat4("view", viewOp);
 		myShader.setMat4("projection", projectionOp);
 
+		// ===== PERSONAJES ANIMADOS (Joe, Michelle) =====
+		animShader.use();
+		animShader.setMat4("projection", projectionOp);
+		animShader.setMat4("view", viewOp);
 
-		// -------------------------------------------------------------------------------------------------------------------------
-		// Personaje Animacion
-		// -------------------------------------------------------------------------------------------------------------------------
-		//Remember to activate the shader with the animation
-	animShader.use();
-	animShader.setMat4("projection", projectionOp);
-	animShader.setMat4("view", viewOp);
+		animShader.setVec3("material.specular", glm::vec3(0.1f));
+		animShader.setFloat("material.shininess", 8.0f);
+		animShader.setVec3("light.ambient", ambientColor);
+		animShader.setVec3("light.diffuse", diffuseColor);
+		animShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+		animShader.setVec3("light.direction", lightDirection);
+		animShader.setVec3("viewPos", camera.Position);
 
-	animShader.setVec3("material.specular", glm::vec3(0.1f));  // Reducido para menos brillo
-	animShader.setFloat("material.shininess", 8.0f);           // Reducido para superficie más mate
-	animShader.setVec3("light.ambient", ambientColor);
-	animShader.setVec3("light.diffuse", diffuseColor);
-	animShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-	animShader.setVec3("light.direction", lightDirection);
-	animShader.setVec3("viewPos", camera.Position);
+		// Joe (personaje estático)
+		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+		modelOp = glm::scale(modelOp, glm::vec3(2.0f));	
+		animShader.setMat4("model", modelOp);
+		animacionPersonaje.Draw(animShader);
 
-	modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-	modelOp = glm::scale(modelOp, glm::vec3(2.0f));	
-	animShader.setMat4("model", modelOp);
-	animacionPersonaje.Draw(animShader);
-		
-	// Configuración de Michelle
-	float michelleBaseX = -1100.0f;
-	float michelleY = 0.0f;
-	float michelleZ = 50.0f;
-	float michelleScale = 2.0f;
-	
-	// Renderizar Michelle con posición y rotación animada
-	modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(michelleBaseX + michelleMovX, michelleY, michelleZ + michelleMovZ));
-	modelOp = glm::rotate(modelOp, glm::radians(michelleRotation), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelOp = glm::scale(modelOp, glm::vec3(michelleScale));
-	animShader.setMat4("model", modelOp);
-	caminaMichelle.Draw(animShader);
+		// Michelle (personaje caminando)
+		float michelleBaseX = -1100.0f;
+		float michelleY = 0.0f;
+		float michelleZ = 50.0f;
+		float michelleScale = 2.0f;
 
+		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(michelleBaseX + michelleMovX, michelleY, michelleZ + michelleMovZ));
+		modelOp = glm::rotate(modelOp, glm::radians(michelleRotation), glm::vec3(0.0f, 1.0f, 0.0f));
+		modelOp = glm::scale(modelOp, glm::vec3(michelleScale));
+		animShader.setMat4("model", modelOp);
+		caminaMichelle.Draw(animShader);
 
-	// -------------------------------------------------------------------------------------------------------------------------
-	// Escenario
-	// -------------------------------------------------------------------------------------------------------------------------
-	staticShader.use();
-	staticShader.setMat4("projection", projectionOp);
-	staticShader.setMat4("view", viewOp);
+		// ===== ESCENARIO Y MODELOS ESTÁTICOS =====
+		staticShader.use();
+		staticShader.setMat4("projection", projectionOp);
+		staticShader.setMat4("view", viewOp);
 
-	modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.75f, 0.0f));
-	modelOp = glm::rotate(modelOp, glm::radians(-25.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelOp = glm::scale(modelOp, glm::vec3(60.0f)); 
-	staticShader.setMat4("model", modelOp);
-	escenario.Draw(staticShader);
-	renderDrone(drone, staticShader, droneAnim);
-	renderBusto(busto, staticShader, bustoAnim);
-	renderdavid(david, staticShader);
-	renderReliquia(reliquia, staticShader);
-	renderTotem(totem, staticShader);
-	renderEstatua(estatua, staticShader);
-	// Orden: cuerpo, cola, pataDelDer, pataDelIzq, pataTraDer, pataTraIzq
-	renderPerro(perroCuerpo, perroCola, perroPataDerDel, perroPataIzqDel, 
-			    perroPataDerTra, perroPataIzqTra, staticShader);
+		// Museo (escenario principal)
+		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.75f, 0.0f));
+		modelOp = glm::rotate(modelOp, glm::radians(-25.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		modelOp = glm::scale(modelOp, glm::vec3(60.0f)); 
+		staticShader.setMat4("model", modelOp);
+		escenario.Draw(staticShader);
+
+		// Modelos individuales
+		renderDrone(drone, staticShader, droneAnim);
+		renderBusto(busto, staticShader, bustoAnim);
+		renderdavid(david, staticShader);
+		renderReliquia(reliquia, staticShader);
+		renderTotem(totem, staticShader);
+		renderEstatua(estatua, staticShader);
+		renderEscultura(esculturaBase, esculturaTridente, esculturaAdorno, staticShader);
+		renderPerro(perroCuerpo, perroCola, perroPataDerDel, perroPataIzqDel, 
+				    perroPataDerTra, perroPataIzqTra, staticShader);
 
 		skyboxShader.use();
 		skybox.Draw(skyboxShader, viewOp, projectionOp, camera);
@@ -1293,6 +1382,21 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 		std::cout << "  Yaw:      " << camera.Yaw << " grados" << std::endl;
 		std::cout << "  Pitch:    " << camera.Pitch << " grados" << std::endl;
 		std::cout << "========================================\n" << std::endl;
+	}
+
+	// Tecla 0 - Tridente volador
+	if (key == GLFW_KEY_0 && action == GLFW_PRESS && !tridenteVolando)
+	{
+		// Iniciar animación de vuelo
+		tridenteVolando = true;
+		tridenteFlightProgress = 0.0f;
+		tridenteEnPosicionInicial = !tridenteEnPosicionInicial;
+		
+		if (tridenteEnPosicionInicial) {
+			std::cout << "[TRIDENTE] ¡Volando de regreso a posición lejana!" << std::endl;
+		} else {
+			std::cout << "[TRIDENTE] ¡Volando hacia la escultura!" << std::endl;
+		}
 	}
 
 	if (key == GLFW_KEY_1 && action == GLFW_PRESS) {
@@ -1553,7 +1657,7 @@ void renderdavid(Model& davidModel, Shader& shader) {
 	// Renderizar el modelo de David con transformaciones específicas
 	// Posición: (995, 155, -36), Rotación: 90° en Y, Escala: 0.6
 	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(995.0f, 155.0f, -36.0f));
+	model = glm::translate(model, glm::vec3(995.0f, 153.0f, -36.0f));
 	model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	model = glm::scale(model, glm::vec3(0.6f));
 	shader.setMat4("model", model);
@@ -1602,7 +1706,51 @@ void renderEstatua(Model& estatuaModel, Shader& shader) {
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(-740.0f, 150.0f, -1020.0f));
 	model = glm::rotate(model, glm::radians(40.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	model = glm::scale(model, glm::vec3(2.5f));
+	model = glm::scale(model, glm::vec3(3.0f));
 	shader.setMat4("model", model);
 	estatuaModel.Draw(shader);
+}
+
+void renderEscultura(Model& base, Model& tridente, Model& adorno, Shader& shader) {
+	// Posición y rotación de la escultura
+	glm::vec3 esculturaPos = glm::vec3(-700.0f, 150.0f, -360.0f);
+	float esculturaRotY = 60.0f;
+	
+	glm::mat4 modelBase = glm::mat4(1.0f);
+	modelBase = glm::translate(modelBase, esculturaPos);
+	modelBase = glm::rotate(modelBase, glm::radians(esculturaRotY), glm::vec3(0.0f, 1.0f, 0.0f));
+	modelBase = glm::scale(modelBase, glm::vec3(2.0f));
+	
+	// Renderizar cuerpo base de la escultura
+	shader.setMat4("model", modelBase);
+	base.Draw(shader);
+	
+	glm::mat4 modelTridente = glm::mat4(1.0f);
+	
+	if (tridenteVolando) {
+		// Durante el vuelo: usar posición y rotación interpoladas
+		modelTridente = glm::translate(modelTridente, tridentePosicionActual);
+		// Rotar en eje Z (tridente gira durante el vuelo)
+		modelTridente = glm::rotate(modelTridente, glm::radians(tridenteRotacionActual), glm::vec3(0.0f, 0.0f, 1.0f));
+		modelTridente = glm::scale(modelTridente, glm::vec3(2.0f));
+	} else {
+		// Estático: usar posición final según el estado
+		if (tridenteEnPosicionInicial) {
+			modelTridente = glm::translate(modelTridente, glm::vec3(-660.0f, 145.0f, -750.0f));
+			modelTridente = glm::rotate(modelTridente, glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			modelTridente = glm::scale(modelTridente, glm::vec3(2.0f));
+		} else {
+			modelTridente = modelBase; // misma transformación base
+		}
+	}
+	
+	shader.setMat4("model", modelTridente);
+	tridente.Draw(shader);
+	
+	// Renderizar adorno/corona (estático, sin animación de pulso)
+	glm::mat4 modelAdorno = modelBase;
+	// El adorno usa la misma transformación base que la escultura (sin escala adicional)
+	
+	shader.setMat4("model", modelAdorno);
+	adorno.Draw(shader);
 }
