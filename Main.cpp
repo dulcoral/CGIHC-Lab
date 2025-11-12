@@ -125,11 +125,11 @@ void renderTotem(Model& totemModel, Shader& shader);
 void renderEstatua(Model& estatuaModel, Shader& shader);
 void renderEscultura(Model& base, Model& tridente, Model& adorno, Shader& shader);
 
-// Función de renderizado del Perro (modelo articulado)
+// Funcion de renderizado del Perro (modelo articulado)
 void renderPerro(Model& cuerpo, Model& cola, Model& pataDerDel, Model& pataIzqDel, 
 			     Model& pataDerTra, Model& pataIzqTra, Shader& shader);
 
-// Helper para configurar point lights
+// setup point lights
 void setupPointLight(Shader& shader, int index, const glm::vec3& position, 
                      const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular,
                      float constant, float linear, float quadratic)
@@ -144,7 +144,7 @@ void setupPointLight(Shader& shader, int index, const glm::vec3& position,
 	shader.setFloat(base + "quadratic", quadratic);
 }
 
-// Helper para configurar spot light (linterna de la cámara)
+// setup spot light
 void setupSpotLight(Shader& shader, int index, const glm::vec3& position, const glm::vec3& direction,
                     const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular,
                     float cutOff, float outerCutOff, float constant, float linear, float quadratic)
@@ -173,7 +173,6 @@ unsigned int SCR_WIDTH = 800;
 unsigned int SCR_HEIGHT = 600;
 GLFWmonitor* monitors;
 
-GLuint VBO[3], VAO[3], EBO[3];
 
 //Camera
 Camera camera(glm::vec3(0.0f, 200.0f, 800.0f));
@@ -189,12 +188,6 @@ double	deltaTime = 5.0f,
 lastFrame = 0.0f;
 
 void getResolution(void);
-void myData(void);
-void LoadTextures(void);
-unsigned int generateTextures(const char*, bool, bool);
-
-//Texture (no se usan actualmente pero se mantiene la infraestructura por compatibilidad)
-unsigned int t_white;
 
 //Lighting
 glm::vec3 lightDirection(-1.0f, 0.0f, 0.0f);
@@ -221,11 +214,8 @@ enum MichelleState {
 	WALKING_LEFT,
 	TURNING_FINAL
 };
-
-// ============================================================================
 // CONSTANTES DE ANIMACIÓN
-// ============================================================================
-// Michelle - Constantes
+// Michelle
 constexpr float MICHELLE_SPEED = 2.0f;
 constexpr float MICHELLE_RANGE_MAX = 650.0f;
 constexpr float MICHELLE_WALK_DISTANCE = 200.0f;
@@ -248,9 +238,9 @@ constexpr float RELIQUIA_BOUNCE_HEIGHT = 15.0f;  // Altura máxima del saltito (
 // Tridente - Constantes de animación de vuelo
 constexpr float TRIDENTE_FLIGHT_SPEED = 0.02f;  // Velocidad del vuelo (0.0 a 1.0 por frame)
 
-// ============================================================================
+
 // VARIABLES DE ESTADO DE ANIMACIÓN
-// ============================================================================
+
 
 
 // Variables de posición y animación de Michelle
@@ -284,6 +274,7 @@ bool tridenteVolando = false;              // true cuando está animándose
 float tridenteFlightProgress = 0.0f;       // 0.0 = inicio, 1.0 = destino
 glm::vec3 tridentePosicionActual = glm::vec3(-660.0f, 145.0f, -730.0f);  // Posición actual interpolada
 float tridenteRotacionActual = 0.0f;       // Rotación actual durante el vuelo
+float tridenteLightFlicker = 0.0f;         // Tiempo tintineo luz
 
 struct DroneAnimation {
 	float currentAngle;
@@ -343,10 +334,7 @@ struct BustoAnimation {
 };
 
 BustoAnimation bustoAnim;
-
-// ============================================================================
-// Sistema de Audio - Variables Globales
-// ============================================================================
+// Sistema de Audio
 struct AudioSystem {
 	MIX_Mixer* mixer;
 	MIX_Audio* museoMusic;     // Música del museo (interior)
@@ -365,53 +353,7 @@ AudioSystem audioSystem;
 const char* museoMusicFile = "resources/audio/museo_music.mp3";
 const char* ciudadSoundFile = "resources/audio/sonido_ciudad.mp3";
 
-unsigned int generateTextures(const char* filename, bool alfa, bool isPrimitive)
-{
-	unsigned int textureID;
-	glGenTextures(1, &textureID);
-	glBindTexture(GL_TEXTURE_2D, textureID);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	int width, height, nrChannels;
-	
-	if(isPrimitive)
-		stbi_set_flip_vertically_on_load(true); 
-	else
-		stbi_set_flip_vertically_on_load(false);
-
-
-	unsigned char* data = stbi_load(filename, &width, &height, &nrChannels, 0);
-	if (data)
-	{
-		if (alfa)
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-		else
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-		stbi_image_free(data);  // Liberar memoria antes de retornar
-		return textureID;
-	}
-	else
-	{
-		std::cout << "Failed to load texture" << std::endl;
-		return 100;
-	}
-}
-
-void LoadTextures()
-{
-	// Cargar solo la textura blanca que puede ser usada como default
-	t_white = generateTextures("Texturas/white.jpg", 0, false);
-}
-
-// ============================================================================
-// InitAudio - Inicializa el sistema de audio SDL_mixer
-// ============================================================================
+// InitAudio
 void InitAudio() {
 	std::cout << "=== Inicializando Sistema de Audio ===" << std::endl;
 	
@@ -423,12 +365,10 @@ void InitAudio() {
 	}
 	std::cout << "[OK] SDL_mixer inicializado" << std::endl;
 	
-	// Configurar formato audio
 	SDL_AudioSpec spec;
-	spec.format = SDL_AUDIO_S16;  // 16-bit signed
-	spec.channels = 2;            // Estéreo
-	spec.freq = 44100;            // 44.1kHz (calidad CD)
-	
+	spec.format = SDL_AUDIO_S16;
+	spec.channels = 2;
+	spec.freq = 44100;
 
 	Uint32 initialized = SDL_WasInit(SDL_INIT_AUDIO);
 	if (!(initialized & SDL_INIT_AUDIO)) {
@@ -522,14 +462,7 @@ void InitAudio() {
 	std::cout << "\n[OK] Sistema de audio listo" << std::endl;
 	std::cout << "=====================================" << std::endl;
 }
-
-// ============================================================================
-// PlayAudio - Función auxiliar genérica para reproducir audio
-// Parámetros:
-//   - audio: Puntero al audio a reproducir
-//   - audioName: Nombre descriptivo del audio (para logs)
-//   - loops: Número de repeticiones (-1 = infinito, 0 = una vez)
-// ============================================================================
+// PlayAudio
 static bool PlayAudio(MIX_Audio* audio, const char* audioName, int loops = -1) {
 	if (!audioSystem.initialized) {
 		std::cout << "[AUDIO] Sistema de audio no inicializado" << std::endl;
@@ -541,22 +474,18 @@ static bool PlayAudio(MIX_Audio* audio, const char* audioName, int loops = -1) {
 		return false;
 	}
 	
-	// Detener audio actual si está reproduciendo
 	if (MIX_TrackPlaying(audioSystem.track)) {
 		MIX_StopTrack(audioSystem.track, 0);
 	}
 	
-	// Configurar el audio en el track
 	MIX_SetTrackAudio(audioSystem.track, audio);
 	
-	// Crear propiedades para la reproducción
 	SDL_PropertiesID props = SDL_CreateProperties();
 	SDL_SetNumberProperty(props, "SDL_mixer.loop.count", 
 	                      loops == -1 ? MIX_DURATION_INFINITE : loops);
 	
-	// Reproducir audio
 	bool success = MIX_PlayTrack(audioSystem.track, props);
-	SDL_DestroyProperties(props);  // Liberar propiedades siempre
+	SDL_DestroyProperties(props);
 	
 	if (!success) {
 		std::cerr << "[AUDIO] Error al reproducir " << audioName << std::endl;
@@ -569,23 +498,17 @@ static bool PlayAudio(MIX_Audio* audio, const char* audioName, int loops = -1) {
 	return true;
 }
 
-// ============================================================================
-// PlayMuseoMusic - Reproduce la música del museo
-// ============================================================================
+// PlayMuseoMusic
 void PlayMuseoMusic(int loops = -1) {
 	PlayAudio(audioSystem.museoMusic, "música del museo", loops);
 }
 
-// ============================================================================
-// PlayCiudadSound - Reproduce el sonido de la ciudad
-// ============================================================================
+// PlayCiudadSound
 void PlayCiudadSound(int loops = -1) {
 	PlayAudio(audioSystem.ciudadSound, "sonido de ciudad", loops);
 }
 
-// ============================================================================
-// StopAudio - Detiene la reproducción actual
-// ============================================================================
+// StopAudio
 void StopAudio() {
 	if (!audioSystem.initialized || !audioSystem.track) {
 		return;
@@ -851,6 +774,12 @@ void animate(void)
 			std::cout << "[TRIDENTE] ¡Llegó a su destino!" << std::endl;
 		}
 	}
+	
+	// Animación de tintineo de la luz del tridente
+	tridenteLightFlicker += 0.5f;  // Velocidad del tintineo
+	if (tridenteLightFlicker >= 360.0f) {
+		tridenteLightFlicker -= 360.0f;
+	}
 }
 
 void getResolution() {
@@ -859,133 +788,8 @@ void getResolution() {
 	SCR_HEIGHT = (mode->height) - 80;
 }
 
-void myData() {
-	float vertices[] = {
-		// positions          // texture coords
-		 0.5f,  0.5f, 0.0f,   1.0f, 1.0f, // top right
-		 0.5f, -0.5f, 0.0f,   1.0f, 0.0f, // bottom right
-		-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, // bottom left
-		-0.5f,  0.5f, 0.0f,   0.0f, 1.0f  // top left 
-	};
-	unsigned int indices[] = {
-		0, 1, 3, // first triangle
-		1, 2, 3  // second triangle
-	};
-
-	/*float verticesPiso[] = {
-		// positions          // texture coords
-		 10.5f,  10.5f, 0.0f,   4.0f, 4.0f, // top right
-		 10.5f, -10.5f, 0.0f,   4.0f, 0.0f, // bottom right
-		-10.5f, -10.5f, 0.0f,   0.0f, 0.0f, // bottom left
-		-10.5f,  10.5f, 0.0f,   0.0f, 4.0f  // top left 
-	};
-	unsigned int indicesPiso[] = {
-		0, 1, 3, // first triangle
-		1, 2, 3  // second triangle
-	};*/
-
-	GLfloat verticesCubo[] = {
-		//Position				//texture coords
-		-0.5f, -0.5f, 0.5f,		0.0f, 0.0f,	//V0 - Frontal
-		0.5f, -0.5f, 0.5f,		1.0f, 0.0f,	//V1
-		0.5f, 0.5f, 0.5f,		1.0f, 1.0f,	//V5
-		-0.5f, -0.5f, 0.5f,		0.0f, 0.0f,	//V0
-		-0.5f, 0.5f, 0.5f,		0.0f, 1.0f,	//V4
-		0.5f, 0.5f, 0.5f,		1.0f, 1.0f,	//V5
-
-		0.5f, -0.5f, -0.5f,		0.0f, 0.0f,	//V2 - Trasera
-		-0.5f, -0.5f, -0.5f,	1.0f, 0.0f,	//V3
-		-0.5f, 0.5f, -0.5f,		1.0f, 1.0f,	//V7
-		0.5f, -0.5f, -0.5f,		0.0f, 0.0f,	//V2
-		0.5f, 0.5f, -0.5f,		0.0f, 1.0f,	//V6
-		-0.5f, 0.5f, -0.5f,		1.0f, 1.0f,	//V7
-
-		-0.5f, 0.5f, 0.5f,		0.0f, 1.0f,	//V4 - Izq
-		-0.5f, 0.5f, -0.5f,		0.0f, 1.0f,	//V7
-		-0.5f, -0.5f, -0.5f,	0.0f, 1.0f,	//V3
-		-0.5f, -0.5f, -0.5f,	0.0f, 1.0f,	//V3
-		-0.5f, 0.5f, 0.5f,		0.0f, 1.0f,	//V4
-		-0.5f, -0.5f, 0.5f,		0.0f, 1.0f,	//V0
-
-		0.5f, 0.5f, 0.5f,		1.0f, 0.0f,	//V5 - Der
-		0.5f, -0.5f, 0.5f,		1.0f, 0.0f,	//V1
-		0.5f, -0.5f, -0.5f,		1.0f, 0.0f,	//V2
-		0.5f, 0.5f, 0.5f,		1.0f, 0.0f,	//V5
-		0.5f, 0.5f, -0.5f,		1.0f, 0.0f,	//V6
-		0.5f, -0.5f, -0.5f,		1.0f, 0.0f,	//V2
-
-		-0.5f, 0.5f, 0.5f,		0.0f, 1.0f,	//V4 - Sup
-		0.5f, 0.5f, 0.5f,		0.0f, 1.0f,	//V5
-		0.5f, 0.5f, -0.5f,		0.0f, 1.0f,	//V6
-		-0.5f, 0.5f, 0.5f,		0.0f, 1.0f,	//V4
-		-0.5f, 0.5f, -0.5f,		0.0f, 1.0f,	//V7
-		0.5f, 0.5f, -0.5f,		0.0f, 1.0f,	//V6
-
-		-0.5f, -0.5f, 0.5f,		1.0f, 1.0f,	//V0 - Inf
-		-0.5f, -0.5f, -0.5f,	1.0f, 1.0f,	//V3
-		0.5f, -0.5f, -0.5f,		1.0f, 1.0f,	//V2
-		-0.5f, -0.5f, 0.5f,		1.0f, 1.0f,	//V0
-		0.5f, -0.5f, -0.5f,		1.0f, 1.0f,	//V2
-		0.5f, -0.5f, 0.5f,		1.0f, 1.0f,	//V1
-	};
-
-	glGenVertexArrays(3, VAO);
-	glGenBuffers(3, VBO);
-	glGenBuffers(3, EBO);
-
-	glBindVertexArray(VAO[0]);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[0]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	// texture coord attribute
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	//Para Piso
-	/*glBindVertexArray(VAO[2]);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO[2]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(verticesPiso), verticesPiso, GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[2]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicesPiso), indicesPiso, GL_STATIC_DRAW);
-
-	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	// texture coord attribute
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);*/
-
-
-	//PARA CUBO
-	glBindVertexArray(VAO[1]);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(verticesCubo), verticesCubo, GL_STATIC_DRAW);
-
-	/*glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO[1]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);*/
-
-	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	// texture coord attribute
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-}
 
 int main() {
-	// ============================================================================
-	// Inicialización de SDL Audio
-	// ============================================================================
 	SDL_SetHint(SDL_HINT_AUDIO_CATEGORY, "playback");
 	
 	std::cout << "\n[DIAGNÓSTICO] Drivers de audio disponibles:" << std::endl;
@@ -1031,9 +835,6 @@ int main() {
 		}
 	}
 	
-	// ============================================================================
-	// Inicialización de GLFW
-	// ============================================================================
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -1060,34 +861,18 @@ int main() {
 	glfwSetKeyCallback(window, my_input);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
-	// ============================================================================
-	// Inicialización de GLAD (OpenGL)
-	// ============================================================================
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
 
-	// ============================================================================
-	// Configuración inicial
-	// ============================================================================
-	LoadTextures();
 	InitAudio();
-	
-	myData();
 	glEnable(GL_DEPTH_TEST);
 
-	// ============================================================================
-	// Cargar Shaders
-	// ============================================================================
-	Shader myShader("shaders/shader_texture_color.vs", "shaders/shader_texture_color.fs");
 	Shader staticShader("Shaders/shader_Lights.vs", "Shaders/shader_Lights_mod.fs");
 	Shader skyboxShader("Shaders/skybox.vs", "Shaders/skybox.fs");
 	Shader animShader("Shaders/anim.vs", "Shaders/anim.fs");
 	
-	// ============================================================================
-	// Cargar Skybox
-	// ============================================================================
 	vector<std::string> faces{
 		"resources/skybox/right.png",
 		"resources/skybox/left.png",
@@ -1098,9 +883,6 @@ int main() {
 	};
 	Skybox skybox = Skybox(faces);
 
-	// ============================================================================
-	// Cargar modelos del proyecto
-	// ============================================================================
 	Model escenario("resources/objects/Escenario/museoFinal.obj");
 	Model drone("resources/objects/Drone/drone.obj");
 	Model busto("resources/objects/Busto/busto.obj");
@@ -1122,33 +904,20 @@ int main() {
 	Model perroPataDerTra("resources/objects/Perro/pataT_right.obj");
 	Model perroPataIzqTra("resources/objects/Perro/pataT_left.obj");
 
-	// ============================================================================
-	// Cargar modelos animados
-	// ============================================================================
 	ModelAnim animacionPersonaje("resources/objects/Joe/joe.dae");
 	animacionPersonaje.initShaders(animShader.ID);
 
 	ModelAnim caminaMichelle("resources/objects/Michelle/michelle.dae");
 	caminaMichelle.initShaders(animShader.ID);
 
-	// Inicializar animaciones de keyframes
 	initBustoKeyframes(bustoAnim);
 
-	// ============================================================================
-	// Inicializar matrices de transformación
-	// ============================================================================
 	glm::mat4 modelOp = glm::mat4(1.0f);
 	glm::mat4 viewOp = glm::mat4(1.0f);
 	glm::mat4 projectionOp = glm::mat4(1.0f);
 
-	// ============================================================================
-	// Iniciar música del museo
-	// ============================================================================
 	PlayMuseoMusic(-1);
 
-	// ============================================================================
-	// RENDER LOOP
-	// ============================================================================
 	while (!glfwWindowShouldClose(window))
 	{
 		skyboxShader.setInt("skybox", 0);
@@ -1186,38 +955,41 @@ int main() {
 			glm::vec3(1.0f, 1.0f, 1.0f),
 			0.08f, 0.009f, 0.00032f);
 
-	// Luz tipo sol para zona de esculturas (reliquia, totem, estatua, escultura)
-	setupPointLight(staticShader, 1,
-		glm::vec3(-820.0f, 300.0f, -600.0f),
-		glm::vec3(0.3f, 0.3f, 0.3f),
-		glm::vec3(1.2f, 1.2f, 1.0f),
-		glm::vec3(1.0f, 1.0f, 0.9f),
-		1.0f, 0.003f, 0.00008f);
+		// Luz tipo sol para zona de esculturas (reliquia, totem, estatua, escultura)
+		setupPointLight(staticShader, 1,
+			glm::vec3(-820.0f, 300.0f, -600.0f),
+			glm::vec3(0.3f, 0.3f, 0.3f),
+			glm::vec3(1.2f, 1.2f, 1.0f),
+			glm::vec3(1.0f, 1.0f, 0.9f),
+			1.0f, 0.003f, 0.00008f);
 
-	// Luz dorada intensa en posición inicial del tridente
-	setupPointLight(staticShader, 2,
-		glm::vec3(-660.0f, 180.0f, -730.0f),
-		glm::vec3(0.4f, 0.3f, 0.1f),
-		glm::vec3(2.0f, 1.6f, 0.4f),
-		glm::vec3(2.0f, 1.8f, 0.8f),
-		1.0f, 0.009f, 0.0003f);
+		// Luz dorada tridente con tintineo
+		float sinValue = sin(glm::radians(tridenteLightFlicker * 5.0f));
+		float normalizedSin = (sinValue + 1.0f) * 0.5f;
+		float flickerIntensity = 0.1f + 0.9f * normalizedSin;
+		setupPointLight(staticShader, 2,
+			glm::vec3(-660.0f, 180.0f, -730.0f),
+			glm::vec3(0.6f * flickerIntensity, 0.5f * flickerIntensity, 0.15f * flickerIntensity),
+			glm::vec3(4.0f * flickerIntensity, 3.2f * flickerIntensity, 0.8f * flickerIntensity),
+			glm::vec3(5.0f * flickerIntensity, 4.0f * flickerIntensity, 1.5f * flickerIntensity),
+			1.0f, 0.007f, 0.0002f);
 
-	// Luz NARANJA ROJIZA intensa para el adorno (más potente y distintiva)
-	setupPointLight(staticShader, 3,
-		glm::vec3(-690.0f, 260.0f, -358.0f),
-		glm::vec3(0.5f, 0.2f, 0.05f),
-		glm::vec3(3.5f, 1.2f, 0.3f),
-		glm::vec3(3.0f, 1.5f, 0.5f),
-		1.0f, 0.009f, 0.0003f);
+		// Luz dorada suave para el adorno
+		setupPointLight(staticShader, 3,
+			glm::vec3(-690.0f, 260.0f, -358.0f),
+			glm::vec3(0.25f, 0.2f, 0.08f),
+			glm::vec3(1.2f, 1.0f, 0.3f),
+			glm::vec3(1.4f, 1.2f, 0.5f),
+			1.0f, 0.009f, 0.0003f);
 
-	// Linterna de la cámara (spotLight)
-	setupSpotLight(staticShader, 0,
-		camera.Position, camera.Front,
-		glm::vec3(0.1f, 0.1f, 0.1f),
-		glm::vec3(1.0f, 1.0f, 1.0f),
-		glm::vec3(1.0f, 1.0f, 1.0f),
-		glm::cos(glm::radians(10.0f)), glm::cos(glm::radians(15.0f)),
-		1.0f, 0.0014f, 0.000007f);
+		// Linterna de la cámara (spotLight)
+		setupSpotLight(staticShader, 0,
+			camera.Position, camera.Front,
+			glm::vec3(0.1f, 0.1f, 0.1f),
+			glm::vec3(1.0f, 1.0f, 1.0f),
+			glm::vec3(1.0f, 1.0f, 1.0f),
+			glm::cos(glm::radians(10.0f)), glm::cos(glm::radians(15.0f)),
+			1.0f, 0.0014f, 0.000007f);
 
 		staticShader.setFloat("material_shininess", 32.0f);
 
@@ -1227,12 +999,7 @@ int main() {
 		staticShader.setMat4("projection", projectionOp);
 		staticShader.setMat4("view", viewOp);
 
-		// Setup shader for primitives
-		myShader.use();
-		myShader.setMat4("view", viewOp);
-		myShader.setMat4("projection", projectionOp);
-
-		// ===== PERSONAJES ANIMADOS (Joe, Michelle) =====
+		// Personajes animados
 		animShader.use();
 		animShader.setMat4("projection", projectionOp);
 		animShader.setMat4("view", viewOp);
@@ -1245,13 +1012,13 @@ int main() {
 		animShader.setVec3("light.direction", lightDirection);
 		animShader.setVec3("viewPos", camera.Position);
 
-		// Joe (personaje estático)
+		// Joe
 		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 		modelOp = glm::scale(modelOp, glm::vec3(2.0f));	
 		animShader.setMat4("model", modelOp);
 		animacionPersonaje.Draw(animShader);
 
-		// Michelle (personaje caminando)
+		// Michelle
 		float michelleBaseX = -1100.0f;
 		float michelleY = 0.0f;
 		float michelleZ = 50.0f;
@@ -1263,19 +1030,17 @@ int main() {
 		animShader.setMat4("model", modelOp);
 		caminaMichelle.Draw(animShader);
 
-		// ===== ESCENARIO Y MODELOS ESTÁTICOS =====
 		staticShader.use();
 		staticShader.setMat4("projection", projectionOp);
 		staticShader.setMat4("view", viewOp);
 
-		// Museo (escenario principal)
+		// Museo
 		modelOp = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.75f, 0.0f));
 		modelOp = glm::rotate(modelOp, glm::radians(-25.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		modelOp = glm::scale(modelOp, glm::vec3(60.0f)); 
 		staticShader.setMat4("model", modelOp);
 		escenario.Draw(staticShader);
 
-		// Modelos individuales
 		renderDrone(drone, staticShader, droneAnim);
 		renderBusto(busto, staticShader, bustoAnim);
 		renderdavid(david, staticShader);
@@ -1299,8 +1064,6 @@ int main() {
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
-	glDeleteVertexArrays(2, VAO);
-	glDeleteBuffers(2, VBO);
 	skybox.Terminate();
 	CleanupAudio();
 	glfwTerminate();
@@ -1476,9 +1239,9 @@ glm::vec3 calculateDronePosition(const DroneAnimation& anim) {
 	return glm::vec3(finalX, height, finalZ);
 }
 
-// ============================================================================
+
 // Funciones de renderizado del Drone
-// ============================================================================
+
 void renderDrone(Model& droneModel, Shader& shader, const DroneAnimation& anim) {
 	glm::vec3 position = calculateDronePosition(anim);
 	
@@ -1490,9 +1253,6 @@ void renderDrone(Model& droneModel, Shader& shader, const DroneAnimation& anim) 
 	droneModel.Draw(shader);
 }
 
-// ============================================================================
-// Función de renderizado del Perro (modelo articulado con animación)
-// ============================================================================
 void renderPerro(Model& cuerpo, Model& cola, Model& pataDerDel, Model& pataIzqDel, 
 			     Model& pataDerTra, Model& pataIzqTra, Shader& shader) {
 	float perroBaseX = -5000.0f;
@@ -1650,9 +1410,9 @@ void renderBusto(Model& bustoModel, Shader& shader, const BustoAnimation& anim) 
 	bustoModel.Draw(shader);
 }
 
-// ============================================================================
+
 // Funciones de renderizado de modelos estáticos del museo
-// ============================================================================
+
 void renderdavid(Model& davidModel, Shader& shader) {
 	// Renderizar el modelo de David con transformaciones específicas
 	// Posición: (995, 155, -36), Rotación: 90° en Y, Escala: 0.6
@@ -1665,24 +1425,13 @@ void renderdavid(Model& davidModel, Shader& shader) {
 }
 
 void renderReliquia(Model& reliquiaModel, Shader& shader) {
-	// Posición base: (-791, 150, -567), Rotación base: -90° en X, Escala: 2.5
-	// Animaciones: Rotación sobre eje Y + saltitos pequeños
 	glm::mat4 model = glm::mat4(1.0f);
 	
-	// abs() hace que siempre suba desde la base, creando efecto de rebote
 	float bounceOffset = abs(sin(glm::radians(reliquiaBounceAngle))) * RELIQUIA_BOUNCE_HEIGHT;
 	
-	// Aplicar transformaciones en orden:
-	// 1. Trasladar a posición base + offset de salto
 	model = glm::translate(model, glm::vec3(-791.0f, 150.0f + bounceOffset, -567.0f));
-	
-	// 2. Rotar para orientar el modelo correctamente (rotación base)
 	model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	
-	// 3. Rotar sobre su propio eje (animación)
 	model = glm::rotate(model, glm::radians(reliquiaRotation), glm::vec3(0.0f, 0.0f, 1.0f));
-	
-	// 4. Escalar
 	model = glm::scale(model, glm::vec3(2.5f));
 	
 	shader.setMat4("model", model);
@@ -1690,8 +1439,6 @@ void renderReliquia(Model& reliquiaModel, Shader& shader) {
 }
 
 void renderTotem(Model& totemModel, Shader& shader) {
-	// Renderizar el modelo del Totem con transformaciones específicas
-	// Posición: (-1046, 150, -440), Rotación: 90° en Y, Escala: 10.0
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(-1046.0f, 150.0f, -440.0f));
 	model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -1701,8 +1448,6 @@ void renderTotem(Model& totemModel, Shader& shader) {
 }
 
 void renderEstatua(Model& estatuaModel, Shader& shader) {
-	// Renderizar el modelo de la Estatua (old_man) con transformaciones específicas
-	// Posición: (-740, 150, -1020), Rotación: 40° en Y, Escala: 2.5
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(-740.0f, 150.0f, -1020.0f));
 	model = glm::rotate(model, glm::radians(40.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -1712,7 +1457,6 @@ void renderEstatua(Model& estatuaModel, Shader& shader) {
 }
 
 void renderEscultura(Model& base, Model& tridente, Model& adorno, Shader& shader) {
-	// Posición y rotación de la escultura
 	glm::vec3 esculturaPos = glm::vec3(-700.0f, 150.0f, -360.0f);
 	float esculturaRotY = 60.0f;
 	
@@ -1721,36 +1465,29 @@ void renderEscultura(Model& base, Model& tridente, Model& adorno, Shader& shader
 	modelBase = glm::rotate(modelBase, glm::radians(esculturaRotY), glm::vec3(0.0f, 1.0f, 0.0f));
 	modelBase = glm::scale(modelBase, glm::vec3(2.0f));
 	
-	// Renderizar cuerpo base de la escultura
 	shader.setMat4("model", modelBase);
 	base.Draw(shader);
 	
 	glm::mat4 modelTridente = glm::mat4(1.0f);
 	
 	if (tridenteVolando) {
-		// Durante el vuelo: usar posición y rotación interpoladas
 		modelTridente = glm::translate(modelTridente, tridentePosicionActual);
-		// Rotar en eje Z (tridente gira durante el vuelo)
 		modelTridente = glm::rotate(modelTridente, glm::radians(tridenteRotacionActual), glm::vec3(0.0f, 0.0f, 1.0f));
 		modelTridente = glm::scale(modelTridente, glm::vec3(2.0f));
 	} else {
-		// Estático: usar posición final según el estado
 		if (tridenteEnPosicionInicial) {
 			modelTridente = glm::translate(modelTridente, glm::vec3(-660.0f, 145.0f, -750.0f));
 			modelTridente = glm::rotate(modelTridente, glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 			modelTridente = glm::scale(modelTridente, glm::vec3(2.0f));
 		} else {
-			modelTridente = modelBase; // misma transformación base
+			modelTridente = modelBase;
 		}
 	}
 	
 	shader.setMat4("model", modelTridente);
 	tridente.Draw(shader);
 	
-	// Renderizar adorno/corona (estático, sin animación de pulso)
 	glm::mat4 modelAdorno = modelBase;
-	// El adorno usa la misma transformación base que la escultura (sin escala adicional)
-	
 	shader.setMat4("model", modelAdorno);
 	adorno.Draw(shader);
 }
