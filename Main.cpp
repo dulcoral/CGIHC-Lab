@@ -16,6 +16,7 @@
  * - E (Exterior): Vista exterior del museo + sonido de ciudad
  * - I (Interior): Vista interior del museo + música del museo
  * - Z (Zoom): Vista de zoom a los modelos principales
+ * - R (Reliquia): Vista de la reliquia
  * - P (Print): Imprimir posición actual de la cámara
  * 
  * AUDIO:
@@ -1081,16 +1082,10 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 	// Tecla E (Exterior) - Vista exterior del museo y reproducir sonido de ciudad
 	if (key == GLFW_KEY_E && action == GLFW_PRESS)
 	{
-		glm::vec3 newPos = glm::vec3(-3000.0f, 0.0f, -1000.0f);
-		glm::vec3 target = glm::vec3(0.0f, 0.0f, 0.0f);
-		glm::vec3 newFront = glm::normalize(target - newPos);
-
-		camera.Position = newPos;
-		camera.Front = newFront;
+		camera.Position = glm::vec3(-3000.0f, 0.0f, -1000.0f);
+		camera.Front = glm::normalize(glm::vec3(3000.0f, 0.0f, 1000.0f));
 		camera.Right = glm::normalize(glm::cross(camera.Front, camera.WorldUp));
 		camera.Up = glm::normalize(glm::cross(camera.Right, camera.Front));
-		camera.Yaw = glm::degrees(atan2(camera.Front.z, camera.Front.x));
-		camera.Pitch = glm::degrees(asin(camera.Front.y));
 		
 		PlayCiudadSound(-1);  // Loop infinito
 		std::cout << "[CAMARA] Vista exterior del museo - Sonido de ciudad" << std::endl;
@@ -1100,14 +1095,7 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 	if (key == GLFW_KEY_I && action == GLFW_PRESS)
 	{
 		camera.Position = glm::vec3(0.0f, 200.0f, 800.0f);
-		camera.Yaw = -90.0f;
-		camera.Pitch = 0.0f;
-
-		glm::vec3 front;
-		front.x = cos(glm::radians(camera.Yaw)) * cos(glm::radians(camera.Pitch));
-		front.y = sin(glm::radians(camera.Pitch));
-		front.z = sin(glm::radians(camera.Yaw)) * cos(glm::radians(camera.Pitch));
-		camera.Front = glm::normalize(front);
+		camera.Front = glm::normalize(glm::vec3(0.0f, 0.0f, -1.0f));
 		camera.Right = glm::normalize(glm::cross(camera.Front, camera.WorldUp));
 		camera.Up = glm::normalize(glm::cross(camera.Right, camera.Front));
 		
@@ -1119,18 +1107,22 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 	if (key == GLFW_KEY_Z && action == GLFW_PRESS)
 	{
 		camera.Position = glm::vec3(952.932f, 203.219f, 40.9843f);
-		camera.Yaw = -75.3158f;
-		camera.Pitch = 2.68517f;
-
-		glm::vec3 front;
-		front.x = cos(glm::radians(camera.Yaw)) * cos(glm::radians(camera.Pitch));
-		front.y = sin(glm::radians(camera.Pitch));
-		front.z = sin(glm::radians(camera.Yaw)) * cos(glm::radians(camera.Pitch));
-		camera.Front = glm::normalize(front);
+		camera.Front = glm::normalize(glm::vec3(0.253213f, 0.046848f, -0.966276f));
 		camera.Right = glm::normalize(glm::cross(camera.Front, camera.WorldUp));
 		camera.Up = glm::normalize(glm::cross(camera.Right, camera.Front));
 		
 		std::cout << "[CAMARA] Vista de zoom a modelos" << std::endl;
+	}
+
+	// Tecla R (Reliquia) - Vista de la reliquia
+	if (key == GLFW_KEY_R && action == GLFW_PRESS)
+	{
+		camera.Position = glm::vec3(-517.207f, 225.778f, -452.803f);
+		camera.Front = glm::normalize(glm::vec3(-0.910688f, -0.0648589f, -0.407972f));
+		camera.Right = glm::normalize(glm::cross(camera.Front, camera.WorldUp));
+		camera.Up = glm::normalize(glm::cross(camera.Right, camera.Front));
+		
+		std::cout << "[CAMARA] Vista de la reliquia" << std::endl;
 	}
 
 	// Tecla P - Imprimir posición actual de la cámara

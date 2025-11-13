@@ -36,6 +36,7 @@ Proyecto final que implementa un museo virtual intentando simular el museo JUMEX
 - **E (Exterior):** Vista exterior del museo + sonido de ciudad
 - **I (Interior):** Vista interior del museo + música del museo
 - **Z (Zoom):** Vista de zoom a los modelos principales
+- **R (Reliquia):** Vista de la reliquia
 - **P (Print):** Imprimir posición actual de la cámara (debug)
 
 ### Animaciones
@@ -132,9 +133,9 @@ make
 
 ## 📚 Documentación y Propuesta
 
-- **📄 Documentación completa:** [Agregar enlace aquí]
-- **📋 Propuesta del proyecto:** [Agregar enlace aquí]
-- **🎥 Video demostración:** [Agregar enlace aquí]
+- **📄 Documentación completa:** [https://drive.google.com/file/d/1I_5auKOI5_v0h6NTB4cx_LtXZwK8gZmH/view?usp=drive_link]
+- **📋 Propuesta del proyecto:** [https://drive.google.com/file/d/1jfWewATUQrmmqw9_yez5vslesrAhlMaY/view?usp=drive_link]
+- **🎥 Video demostración:** [https://drive.google.com/file/d/1jIypD4GWzugY7x5HHDX6Bi9CxrtqSs_z/view?usp=drive_link]
 
 ## 📝 Notas Técnicas
 
@@ -143,6 +144,13 @@ make
 - **Formato de modelos:** OBJ (Wavefront), DAE (Collada)
 - **Formato de audio:** MP3
 - **Resolución:** Adaptativa (fullscreen - 80px)
+
+## 🐛 Bugs Conocidos y Mejoras Pendientes
+
+### Audio y Vistas
+- **Bug de audio en vistas interiores:** Al presionar **E** (exterior) se reproduce el sonido de ciudad. Si luego se presionan **Z** o **R** (vistas interiores), la música de ciudad continúa reproduciéndose aunque ya se esté dentro del museo. 
+  - **Solución temporal:** Usar **I** SOLO para ingresar al museo y cambiar a música del museo, y **E** SOLO para salir al exterior. Usar Las teclas **Z** y **R** UNICAMENTE dentro del museo , ya que solo cambian la posición de la cámara, no el audio.
+  - **Nota:** No se agregó cambio de audio en **Z** y **R** porque reiniciaría la música cada vez que se cambia de vista, interrumpiendo la continuidad del audio.
 
 ## 🏆 Créditos
 
