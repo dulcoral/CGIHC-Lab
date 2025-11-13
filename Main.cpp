@@ -107,10 +107,10 @@ glm::vec3 ambientColor = diffuseColor * glm::vec3(0.75f);
 
 //Nuevas variables para la animación del carro
 bool animacion = false;
-int estadoRecorrido = 0;	//0: idle, 1: reversa, 2: arriba, 3: derecha, 4: abajo, 5: derecha, 6: finalizado
+int estadoRecorrido = 0;	//0: idle, 1: (0,0,0)->(200,0,0), 2: (200,0,0)->(200,0,250), 3: gira diagonal, 4: (200,0,250)->(-200,0,0), 5: (-200,0,0)->(-200,0,250), 6: gira diagonal, 7: (-200,0,250)->(0,0,0), 8: finalizado
 float avance = 0.0f;
 float velocidad = 2.5f;
-glm::vec3 posicionInicialCarro = glm::vec3(0.0f, -1.0f, -15.0f);
+glm::vec3 posicionInicialCarro = glm::vec3(0.0f, 0.0f, 0.0f);
 glm::vec3 posicionCarro = posicionInicialCarro;
 float orientacionCarro = 90.0f;
 
@@ -298,49 +298,71 @@ void animate(void)
 	{
 		switch (estadoRecorrido)
 		{
-		case 1: // Reversa 200 unidades. El auto apunta a la derecha (+X), se mueve en -X.
+		case 1: // (0,0,0) -> (200,0,0) - Avanza en +X
 			orientacionCarro = 90.0f;
-			posicionCarro.x -= velocidad;
+			posicionCarro.x += velocidad;
 			avance += velocidad;
 			if (avance >= 200.0f) {
 				avance = 0.0f;
 				estadoRecorrido = 2;
 			}
 			break;
-		case 2: // Mover "arriba" 200.5 unidades (-Z)
-			orientacionCarro = 180.0f; // Apunta hacia "arriba" (-Z)
-			posicionCarro.z -= velocidad;
+			
+		case 2: // (200,0,0) -> (200,0,250) - Avanza en +Z
+			orientacionCarro = 0.0f;
+			posicionCarro.z += velocidad;
 			avance += velocidad;
-			if (avance >= 200.5f) {
+			if (avance >= 250.0f) {
 				avance = 0.0f;
 				estadoRecorrido = 3;
 			}
 			break;
-		case 3: // Mover "derecha" 310.5 unidades (+X)
-			orientacionCarro = 90.0f; // Apunta a la derecha
-			posicionCarro.x += velocidad;
-			avance += velocidad;
-			if (avance >= 310.5f) {
-				avance = 0.0f;
-				estadoRecorrido = 4;
-			}
+			
+		case 3: // Gira en diagonal
+			// Ángulo precalculado: atan2(-400, -250) ≈ -122.0°
+			// Vector dirección: (-200,0,0) - (200,0,250) = (-400, 0, -250)
+			orientacionCarro = -122.0f; // Dirección diagonal hacia (-200, 0, 0)
+			estadoRecorrido = 4;
 			break;
-		case 4: // Mover "abajo" 200.5 unidades (+Z)
-			orientacionCarro = 0.0f; // Apunta hacia "abajo" (+Z)
-			posicionCarro.z += velocidad;
+			
+		case 4: // (200,0,250) -> (-200,0,0) - Avanza diagonalmente
+			posicionCarro.x -= velocidad * 0.848f; // 400/471.7
+			posicionCarro.z -= velocidad * 0.530f; // 250/471.7
 			avance += velocidad;
-			if (avance >= 200.5f) {
+			if (avance >= 471.7f) { // sqrt(400^2 + 250^2)
+				posicionCarro.x = -200.0f;
+				posicionCarro.z = 0.0f;
 				avance = 0.0f;
 				estadoRecorrido = 5;
 			}
 			break;
-		case 5: // Mover "derecha" 150.0 unidades (+X)
-			orientacionCarro = 90.0f; // Apunta a la derecha
-			posicionCarro.x += velocidad;
+			
+		case 5: // (-200,0,0) -> (-200,0,250) - Avanza en +Z
+			orientacionCarro = 0.0f;
+			posicionCarro.z += velocidad;
 			avance += velocidad;
-			if (avance >= 150.0f) {
+			if (avance >= 250.0f) {
 				avance = 0.0f;
-				estadoRecorrido = 6; // Finalizado
+				estadoRecorrido = 6;
+			}
+			break;
+			
+		case 6: // Gira en diagonal
+			// Ángulo precalculado: atan2(200, -250) ≈ 141.34°
+			// Vector dirección: (0,0,0) - (-200,0,250) = (200, 0, -250)
+			orientacionCarro = 141.34f; // Dirección diagonal hacia el origen
+			estadoRecorrido = 7;
+			break;
+			
+		case 7: // (-200,0,250) -> (0,0,0) - Avanza diagonalmente
+			posicionCarro.x += velocidad * 0.625f; // 200/320.16
+			posicionCarro.z -= velocidad * 0.781f; // 250/320.16
+			avance += velocidad;
+			if (avance >= 320.16f) { // sqrt(200^2 + 250^2)
+				posicionCarro.x = 0.0f;
+				posicionCarro.z = 0.0f;
+				avance = 0.0f;
+				estadoRecorrido = 8;
 				animacion = false;
 			}
 			break;
@@ -1009,9 +1031,9 @@ void my_input(GLFWwindow* window, int key, int scancode, int action, int mode)
 	//Car animation
 	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
 	{
-		if (estadoRecorrido == 0 || estadoRecorrido == 6)
+		if (estadoRecorrido == 0 || estadoRecorrido == 8)
 		{
-			if (estadoRecorrido == 6) { // Si ha finalizado, reiniciar
+			if (estadoRecorrido == 8) { // Si ha finalizado, reiniciar
 				posicionCarro = posicionInicialCarro;
 				orientacionCarro = 90.0f;
 			}
