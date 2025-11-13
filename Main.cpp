@@ -620,10 +620,13 @@ void animate(void)
 			break;
 		
 		case WALKING_FINAL:
-			michelleMovX -= MICHELLE_SPEED;
+		case WALKING_BACK_1:
+			// Simplificado: movimiento unificado para ambos casos
+			michelleMovX += (michelleState == WALKING_FINAL) ? -MICHELLE_SPEED : MICHELLE_SPEED;
 			michelleFinalCounter += MICHELLE_SPEED;
-			if (michelleFinalCounter >= MICHELLE_FINAL_WALK)
-				michelleState = TURNING_180;
+			if (michelleFinalCounter >= MICHELLE_FINAL_WALK) {
+				michelleState = (michelleState == WALKING_FINAL) ? TURNING_180 : TURNING_BACK_1;
+			}
 			break;
 		
 		case TURNING_180:
@@ -631,13 +634,6 @@ void animate(void)
 				michelleRotation = MICHELLE_INITIAL_ROTATION;
 				michelleFinalCounter = 0.0f;
 			}
-			break;
-		
-		case WALKING_BACK_1:
-			michelleMovX += MICHELLE_SPEED;
-			michelleFinalCounter += MICHELLE_SPEED;
-			if (michelleFinalCounter >= MICHELLE_FINAL_WALK)
-				michelleState = TURNING_BACK_1;
 			break;
 		
 		case TURNING_BACK_1:
@@ -693,34 +689,25 @@ void animate(void)
 	// Movimiento de lado a lado
 	constexpr float PERRO_VELOCIDAD_GIRO = 3.0f;
 	if (perroGirando) {
-		if (perroRotacion < perroRotacionObjetivo) {
-			perroRotacion += PERRO_VELOCIDAD_GIRO;
-			if (perroRotacion >= perroRotacionObjetivo) {
-				perroRotacion = perroRotacionObjetivo;
-				perroGirando = false;
-			}
+		// Girar hacia el objetivo
+		float diff = perroRotacionObjetivo - perroRotacion;
+		if (std::abs(diff) <= PERRO_VELOCIDAD_GIRO) {
+			perroRotacion = perroRotacionObjetivo;
+			perroGirando = false;
 		} else {
-			perroRotacion -= PERRO_VELOCIDAD_GIRO;
-			if (perroRotacion <= perroRotacionObjetivo) {
-				perroRotacion = perroRotacionObjetivo;
-				perroGirando = false;
-			}
+			perroRotacion += (diff > 0) ? PERRO_VELOCIDAD_GIRO : -PERRO_VELOCIDAD_GIRO;
 		}
 	} else {
-		if (perroMovDirection) {
-			perroMovX -= PERRO_MOV_SPEED;
-			if (perroMovX <= -PERRO_MOV_RANGE) {
-				perroGirando = true;
-				perroRotacionObjetivo = perroRotacion + 180.0f;
-				perroMovDirection = false;
-			}
-		} else {
-			perroMovX += PERRO_MOV_SPEED;
-			if (perroMovX >= 0.0f) {
-				perroGirando = true;
-				perroRotacionObjetivo = perroRotacion + 180.0f;
-				perroMovDirection = true;
-			}
+		// Movimiento unificado
+		float speed = perroMovDirection ? -PERRO_MOV_SPEED : PERRO_MOV_SPEED;
+		float limit = perroMovDirection ? -PERRO_MOV_RANGE : 0.0f;
+		
+		perroMovX += speed;
+		if ((perroMovDirection && perroMovX <= limit) || (!perroMovDirection && perroMovX >= limit)) {
+			perroMovX = limit;
+			perroGirando = true;
+			perroRotacionObjetivo = perroRotacion + 180.0f;
+			perroMovDirection = !perroMovDirection;
 		}
 	}
 	
@@ -1245,41 +1232,36 @@ void renderDrone(Model& droneModel, Shader& shader, const DroneAnimation& anim) 
 	droneModel.Draw(shader);
 }
 
+// Funcin para renderizar una pata del perro
+inline void renderPataPerro(const glm::mat4& base, float rotacion, float scale, Model& pata, Shader& shader) {
+	glm::mat4 model = glm::rotate(base, glm::radians(rotacion), glm::vec3(1.0f, 0.0f, 0.0f));
+	model = glm::scale(model, glm::vec3(scale));
+	shader.setMat4("model", model);
+	pata.Draw(shader);
+}
+
 void renderPerro(Model& cuerpo, Model& cola, Model& pataDerDel, Model& pataIzqDel, 
 			     Model& pataDerTra, Model& pataIzqTra, Shader& shader) {
-	float perroBaseX = -5000.0f;
-	float perroBaseY = -1200.0f;
-	float perroBaseZ = -5000.0f;
-	float perroScale = 50.0f;
+	constexpr float perroBaseX = -5000.0f;
+	constexpr float perroBaseY = -1200.0f;
+	constexpr float perroBaseZ = -5000.0f;
+	constexpr float perroScale = 50.0f;
 	
 	glm::mat4 modelBase = glm::translate(glm::mat4(1.0f), glm::vec3(perroBaseX + perroMovX, perroBaseY, perroBaseZ));
 	modelBase = glm::rotate(modelBase, glm::radians(perroRotacion), glm::vec3(0.0f, 1.0f, 0.0f));
 	
-	glm::mat4 modelPata = glm::rotate(modelBase, glm::radians(perroPataDerDelantera), glm::vec3(1.0f, 0.0f, 0.0f));
-	modelPata = glm::scale(modelPata, glm::vec3(perroScale));
-	shader.setMat4("model", modelPata);
-	pataDerDel.Draw(shader);
+	renderPataPerro(modelBase, perroPataDerDelantera, perroScale, pataDerDel, shader);
+	renderPataPerro(modelBase, perroPataIzqDelantera, perroScale, pataIzqDel, shader);
+	renderPataPerro(modelBase, perroPataDerTrasera, perroScale, pataDerTra, shader);
+	renderPataPerro(modelBase, perroPataIzqTrasera, perroScale, pataIzqTra, shader);
 	
-	modelPata = glm::rotate(modelBase, glm::radians(perroPataIzqDelantera), glm::vec3(1.0f, 0.0f, 0.0f));
-	modelPata = glm::scale(modelPata, glm::vec3(perroScale));
-	shader.setMat4("model", modelPata);
-	pataIzqDel.Draw(shader);
-	
-	modelPata = glm::rotate(modelBase, glm::radians(perroPataDerTrasera), glm::vec3(1.0f, 0.0f, 0.0f));
-	modelPata = glm::scale(modelPata, glm::vec3(perroScale));
-	shader.setMat4("model", modelPata);
-	pataDerTra.Draw(shader);
-	
-	modelPata = glm::rotate(modelBase, glm::radians(perroPataIzqTrasera), glm::vec3(1.0f, 0.0f, 0.0f));
-	modelPata = glm::scale(modelPata, glm::vec3(perroScale));
-	shader.setMat4("model", modelPata);
-	pataIzqTra.Draw(shader);
-	
+	// Cola
 	glm::mat4 modelCola = glm::rotate(modelBase, glm::radians(perroCola), glm::vec3(0.0f, 1.0f, 0.0f));
 	modelCola = glm::scale(modelCola, glm::vec3(perroScale));
 	shader.setMat4("model", modelCola);
 	cola.Draw(shader);
 	
+	// Cuerpo
 	modelBase = glm::scale(modelBase, glm::vec3(perroScale));
 	shader.setMat4("model", modelBase);
 	cuerpo.Draw(shader);
@@ -1460,21 +1442,17 @@ void renderEscultura(Model& base, Model& tridente, Model& adorno, Shader& shader
 	shader.setMat4("model", modelBase);
 	base.Draw(shader);
 	
-	glm::mat4 modelTridente = glm::mat4(1.0f);
-	
+	// Tridente
+	glm::mat4 modelTridente;
 	if (tridenteVolando) {
-		modelTridente = glm::translate(modelTridente, tridentePosicionActual);
+		modelTridente = glm::translate(glm::mat4(1.0f), tridentePosicionActual);
 		modelTridente = glm::rotate(modelTridente, glm::radians(tridenteRotacionActual), glm::vec3(0.0f, 0.0f, 1.0f));
-		modelTridente = glm::scale(modelTridente, glm::vec3(2.0f));
+	} else if (tridenteEnPosicionInicial) {
+		modelTridente = glm::translate(glm::mat4(1.0f), glm::vec3(-660.0f, 145.0f, -750.0f));
 	} else {
-		if (tridenteEnPosicionInicial) {
-			modelTridente = glm::translate(modelTridente, glm::vec3(-660.0f, 145.0f, -750.0f));
-			modelTridente = glm::rotate(modelTridente, glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-			modelTridente = glm::scale(modelTridente, glm::vec3(2.0f));
-		} else {
-			modelTridente = modelBase;
-		}
+		modelTridente = modelBase;
 	}
+	modelTridente = glm::scale(modelTridente, glm::vec3(2.0f));
 	
 	shader.setMat4("model", modelTridente);
 	tridente.Draw(shader);
